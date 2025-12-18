@@ -1,0 +1,36 @@
+{
+  "name": "users",
+  "version": "1.0.0",
+  "description": "User service for the Paluku blog application",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"No tests specified\" && exit 0",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "concurrently \"tsc -w\" \"nodemon dist/server.js\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sriram/paluku-users.git"
+  },
+  "keywords": [
+    "blog",
+    "users",
+    "node",
+    "express",
+    "typescript"
+  ],
+  "author": "Sriram Boddu",
+  "license": "MIT",
+  "dependencies": {
+    "@types/dotenv": "^6.1.1",
+    "@types/express": "^5.0.6",
+    "@types/mongoose": "^5.11.96",
+    "concurrently": "^9.2.1",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "mongoose": "^8.20.3",
+    "typescript": "^5.9.3"
+  }
+}
