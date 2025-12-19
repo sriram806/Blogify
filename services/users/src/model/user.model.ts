@@ -4,11 +4,13 @@ export interface IUser extends Document {
     name: string;
     email: string;
     password: string;
+    role: "admin" | "user";
     image: string;
     instagram?: string;
     facebook?: string;
     linkedin?: string;
     bio?: string;
+    createdAt?: Date;
 }
 
 const UserSchema = new Schema<IUser>(
@@ -29,9 +31,15 @@ const UserSchema = new Schema<IUser>(
             required: true,
             select: false
         },
+        role: {
+            type: String,
+            enum: ["admin", "user"],
+            default: "user"
+
+        },
         image: {
             type: String,
-            required: true
+            default: "https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png"
         },
         instagram: String,
         facebook: String,
@@ -40,6 +48,10 @@ const UserSchema = new Schema<IUser>(
             type: String,
             default: "Hello! I am using Blogify.",
             maxlength: 200
+        },
+        createdAt: {
+            type: Date,
+            default: Date.now
         }
     },
     {
@@ -47,4 +59,6 @@ const UserSchema = new Schema<IUser>(
     }
 );
 
-export default mongoose.model<IUser>("User", UserSchema);
+const User = mongoose.model<IUser>("User", UserSchema);
+
+export default User;
