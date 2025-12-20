@@ -1,5 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
+import cookieParser from "cookie-parser";
 import connectDB from "./utils/database.js";
 import UserRouter from "./routes/user.routes.js";
 
@@ -13,6 +14,7 @@ const appVersion = "v1";
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 connectDB();
 

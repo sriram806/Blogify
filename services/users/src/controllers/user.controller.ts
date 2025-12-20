@@ -58,3 +58,24 @@ export const Logout = async (req: Request, res: Response): Promise<Response> => 
         return res.status(500).json({ success: false, message: `Internal Server Error in Logout: ${error.message}` });
     }
 };
+
+export const GetProfile = async (req: Request, res: Response): Promise<Response> => {
+    try {
+        const userId = req.user?._id;
+        
+        if (!userId) return res.status(401).json({ success: false, message: "User not authenticated" });
+        
+        const user = await User.findById(userId);
+        
+        if (!user) return res.status(404).json({ success: false, message: "User not found" });
+        
+        const userObject = {
+            ...user.toObject(),
+            _id: user._id.toString(),
+        };
+        
+        return res.status(200).json({ success: true, data: userObject });
+    } catch (error: any) {
+        return res.status(500).json({ success: false, message: `Internal Server Error in GetProfile: ${error.message}` });
+    }
+};
