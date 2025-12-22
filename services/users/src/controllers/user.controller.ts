@@ -1,8 +1,11 @@
-import { Request, Response } from "express";
+import { Request, response, Response } from "express";
 import bcrypt from "bcryptjs";
 import User from "../model/user.model.js";
 import { createSendToken } from "../middleware/token.js";
+import { request } from "http";
 
+
+// register a new user
 export const Registration = async (req: Request, res: Response): Promise<Response> => {
     try {
         const { name, email, password, role } = req.body;
@@ -31,6 +34,7 @@ export const Registration = async (req: Request, res: Response): Promise<Respons
     }
 };
 
+// login user
 export const Login = async (req: Request, res: Response): Promise<any> => {
     const { email, password } = req.body;
     try {
@@ -50,6 +54,7 @@ export const Login = async (req: Request, res: Response): Promise<any> => {
     }
 }
 
+// logout user
 export const Logout = async (req: Request, res: Response): Promise<Response> => {
     try {
         res.cookie("token", null, { expires: new Date(Date.now()), httpOnly: true });
@@ -59,11 +64,13 @@ export const Logout = async (req: Request, res: Response): Promise<Response> => 
     }
 };
 
+
+// get user profile
 export const GetProfile = async (req: Request, res: Response): Promise<Response> => {
     try {
         const userId = req.user?._id;
         
-        if (!userId) return res.status(401).json({ success: false, message: "User not authenticated" });
+        if (!userId) return res.status(401).json({ success: false, message: "UserId is not provided" });
         
         const user = await User.findById(userId);
         
@@ -79,3 +86,45 @@ export const GetProfile = async (req: Request, res: Response): Promise<Response>
         return res.status(500).json({ success: false, message: `Internal Server Error in GetProfile: ${error.message}` });
     }
 };
+
+// get current user 
+export const currentUser = async(req:Request, res: Response): Promise<Response> => {
+    try {
+        const userId = req.user?._id;
+        
+        if (!userId) return res.status(401).json({ success: false, message: "User not authenticated" });
+        
+        const user = await User.findById(userId);
+        
+        if (!user) return res.status(404).json({ success: false, message: "User not found" });
+        
+        return res.status(200).json({ success: true, data: user });
+    } catch (error: any) {
+        return res.status(500).json({ success: false, message: `Internal Server Error in currentUser: ${error.message}` });
+    }
+}
+
+// update user profile
+
+export const UpdateProfile = async (req: Request, res: Response): Promise<Response> => {
+    try {
+        const userId = req.user?._id;
+        
+        if (!userId) return res.status(401).json({ success: false, message: "User not authenticated" });
+        const {name, image, instagram, facebook, linkedin, bio} = req.body;
+        
+        const updatedData: any = {};
+        if(name) updatedData.name = name;
+        if(image) updatedData.image = image;
+        if(instagram) updatedData.instagram = instagram;
+        if(facebook) updatedData.facebook = facebook;
+        if(linkedin) updatedData.linkedin = linkedin;
+        if(bio) updatedData.bio = bio;
+        const user = await User.findByIdAndUpdate(userId, updatedData, {new: true});
+        
+        if (!user) return res.status(404).json({ success: false, message: "User not found" });
+        return res.status(200).json({ success: true, data: user, message: "Profile updated successfully" });        
+    } catch (error: any) {
+        return res.status(500).json({ success: false, message: `Internal Server Error in UpdateProfile: ${error.message}` });
+    }
+}

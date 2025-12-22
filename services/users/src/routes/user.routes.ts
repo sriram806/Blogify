@@ -1,5 +1,5 @@
 import express, { Request, Response } from "express";
-import { GetProfile, Login, Logout, Registration } from "../controllers/user.controller.js";
+import { currentUser, GetProfile, Login, Logout, Registration, UpdateProfile } from "../controllers/user.controller.js";
 import isAuthenticated from "../middleware/isAuth.js";
 
 const UserRouter = express.Router();
@@ -11,6 +11,8 @@ UserRouter.get("/", (req: Request, res: Response) => {
 UserRouter.post("/register", Registration);
 UserRouter.post("/login", Login);
 UserRouter.post("/logout", Logout);
-UserRouter.get("/getUserDetails", isAuthenticated, GetProfile);
+UserRouter.get("/getUserDetails/:userId", isAuthenticated, GetProfile);
+UserRouter.get("/profile", isAuthenticated, currentUser);
+UserRouter.put("/profile/:userId", isAuthenticated, UpdateProfile);
 
 export default UserRouter;
