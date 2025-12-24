@@ -1,9 +1,9 @@
-import express from "express";
+import express, { Request, Response } from "express";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import connectDB from "./utils/database.js";
 import UserRouter from "./routes/user.routes.js";
-import {v2 as cloudinary} from "cloudinary";
+import { v2 as cloudinary } from "cloudinary";
 
 dotenv.config();
 
@@ -24,8 +24,8 @@ cloudinary.config({
     api_secret: process.env.API_Secret,
 })
 
-app.get("/", (req, res) => {
-    res.send("User Service is up and running!");
+app.get("/", (req: Request, res: Response) => {
+    res.send("User Service is up and running on port number "+ PORT + "!");
 });
 
 app.use(`/api/${appVersion}/users`, UserRouter);
