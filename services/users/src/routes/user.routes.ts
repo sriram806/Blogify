@@ -1,6 +1,7 @@
 import express, { Request, Response } from "express";
-import { currentUser, GetProfile, Login, Logout, Registration, UpdateProfile } from "../controllers/user.controller.js";
+import { currentUser, GetProfile, Login, Logout, Registration, UpdateProfile, UpdateProfileImage } from "../controllers/user.controller.js";
 import isAuthenticated from "../middleware/isAuth.js";
+import uploadFile from "../middleware/multer.middleware.js";
 
 const UserRouter = express.Router();
 
@@ -13,6 +14,7 @@ UserRouter.post("/login", Login);
 UserRouter.post("/logout", Logout);
 UserRouter.get("/getUserDetails/:userId", isAuthenticated, GetProfile);
 UserRouter.get("/profile", isAuthenticated, currentUser);
-UserRouter.put("/profile/:userId", isAuthenticated, UpdateProfile);
+UserRouter.put("/profile", isAuthenticated, UpdateProfile);
+UserRouter.put("/profile/image", isAuthenticated, uploadFile, UpdateProfileImage);
 
 export default UserRouter;

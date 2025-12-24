@@ -2,7 +2,8 @@ import { Request, response, Response } from "express";
 import bcrypt from "bcryptjs";
 import User from "../model/user.model.js";
 import { createSendToken } from "../middleware/token.js";
-import { request } from "http";
+import getBuffer from "../utils/buffer.service.js";
+import { v2 as cloudinary } from "cloudinary";
 
 
 // register a new user
@@ -69,18 +70,18 @@ export const Logout = async (req: Request, res: Response): Promise<Response> => 
 export const GetProfile = async (req: Request, res: Response): Promise<Response> => {
     try {
         const userId = req.user?._id;
-        
+
         if (!userId) return res.status(401).json({ success: false, message: "UserId is not provided" });
-        
+
         const user = await User.findById(userId);
-        
+
         if (!user) return res.status(404).json({ success: false, message: "User not found" });
-        
+
         const userObject = {
             ...user.toObject(),
             _id: user._id.toString(),
         };
-        
+
         return res.status(200).json({ success: true, data: userObject });
     } catch (error: any) {
         return res.status(500).json({ success: false, message: `Internal Server Error in GetProfile: ${error.message}` });
@@ -88,16 +89,16 @@ export const GetProfile = async (req: Request, res: Response): Promise<Response>
 };
 
 // get current user 
-export const currentUser = async(req:Request, res: Response): Promise<Response> => {
+export const currentUser = async (req: Request, res: Response): Promise<Response> => {
     try {
         const userId = req.user?._id;
-        
+
         if (!userId) return res.status(401).json({ success: false, message: "User not authenticated" });
-        
+
         const user = await User.findById(userId);
-        
+
         if (!user) return res.status(404).json({ success: false, message: "User not found" });
-        
+
         return res.status(200).json({ success: true, data: user });
     } catch (error: any) {
         return res.status(500).json({ success: false, message: `Internal Server Error in currentUser: ${error.message}` });
@@ -109,22 +110,59 @@ export const currentUser = async(req:Request, res: Response): Promise<Response> 
 export const UpdateProfile = async (req: Request, res: Response): Promise<Response> => {
     try {
         const userId = req.user?._id;
-        
+
         if (!userId) return res.status(401).json({ success: false, message: "User not authenticated" });
-        const {name, image, instagram, facebook, linkedin, bio} = req.body;
-        
+        const { name, image, instagram, facebook, linkedin, bio } = req.body;
+
         const updatedData: any = {};
-        if(name) updatedData.name = name;
-        if(image) updatedData.image = image;
-        if(instagram) updatedData.instagram = instagram;
-        if(facebook) updatedData.facebook = facebook;
-        if(linkedin) updatedData.linkedin = linkedin;
-        if(bio) updatedData.bio = bio;
-        const user = await User.findByIdAndUpdate(userId, updatedData, {new: true});
-        
+        if (name) updatedData.name = name;
+        if (image) updatedData.image = image;
+        if (instagram) updatedData.instagram = instagram;
+        if (facebook) updatedData.facebook = facebook;
+        if (linkedin) updatedData.linkedin = linkedin;
+        if (bio) updatedData.bio = bio;
+        const user = await User.findByIdAndUpdate(userId, updatedData, { new: true });
+
         if (!user) return res.status(404).json({ success: false, message: "User not found" });
-        return res.status(200).json({ success: true, data: user, message: "Profile updated successfully" });        
+
+        const userObject = {
+            ...user.toObject(),
+            _id: user._id.toString(),
+        };
+
+        return createSendToken(userObject, 200, res, "Profile updated successfully");
     } catch (error: any) {
         return res.status(500).json({ success: false, message: `Internal Server Error in UpdateProfile: ${error.message}` });
+    }
+}
+
+export const UpdateProfileImage = async (req: Request, res: Response): Promise<Response> => {
+    try {
+        const file = req.file;
+        if (!file) return res.status(400).json({ success: false, message: "No file uploaded" });
+
+        const fileBuffer = await getBuffer(file);
+        if (!fileBuffer) return res.status(400).json({ success: false, message: "Invalid file data" });
+
+        const uploadResult = await cloudinary.uploader.upload(fileBuffer as any, {
+            folder: "profile_images",
+            resource_type: "image",
+        });
+
+        const userId = req.user?._id;
+        if (!userId) return res.status(401).json({ success: false, message: "User not authenticated" });
+
+        const user = await User.findByIdAndUpdate(userId, { image: uploadResult.secure_url }, { new: true });
+
+        if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+        const userObject = {
+            ...user.toObject(),
+            _id: user._id.toString(),
+        };
+
+        return createSendToken(userObject, 200, res, "Profile image updated successfully");
+    } catch (error: any) {
+        return res.status(500).json({ success: false, message: `Internal Server Error in UpdateProfileImage: ${error.message}` });
     }
 }

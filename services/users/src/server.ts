@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import connectDB from "./utils/database.js";
 import UserRouter from "./routes/user.routes.js";
+import {v2 as cloudinary} from "cloudinary";
 
 dotenv.config();
 
@@ -17,6 +18,11 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 connectDB();
+cloudinary.config({
+    cloud_name: process.env.Cloud_Name,
+    api_key: process.env.API,
+    api_secret: process.env.API_Secret,
+})
 
 app.get("/", (req, res) => {
     res.send("User Service is up and running!");
