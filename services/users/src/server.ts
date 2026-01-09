@@ -4,11 +4,12 @@ import cookieParser from "cookie-parser";
 import connectDB from "./utils/database.js";
 import UserRouter from "./routes/user.routes.js";
 import { v2 as cloudinary } from "cloudinary";
+import cors from "cors";
 
 dotenv.config();
 
 const app = express();
-
+app.use(cors());
 const PORT = process.env.PORT || 5000;
 
 const appVersion = "v1";
