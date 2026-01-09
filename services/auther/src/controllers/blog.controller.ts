@@ -80,3 +80,25 @@ export const GetAllBlogs = async (req: Request, res: Response) => {
         res.status(500).json({ success: false, message: `Internal server error at GetAllBlogs: ${error}` });
     }
 }
+
+// Delete Bolg
+export const DeleteBlog = async (req: AuthRequest, res: Response) => {
+    try {
+        const { id } = req.params;
+        if (!id) return res.status(400).json({ success: false, message: "Blog ID is required" });
+
+        const blog = await sql`SELECT * FROM blogs WHERE id = ${id}`;
+        if (blog.length === 0) return res.status(404).json({ success: false, message: "Blog not found" });
+
+        if (blog[0].author !== req.user?.id) return res.status(403).json({ success: false, message: "You are not authorized to delete this blog" });
+        
+        await sql`DELETE FROM blogs WHERE id = ${id}`;
+        await sql`DELETE FROM comments WHERE blog_id = ${id}`;
+        await sql`DELETE FROM likes WHERE blog_id = ${id}`;
+
+        return res.status(200).json({ success: true, message: "Blog and related data deleted successfully" });
+
+    } catch (error) {
+        return res.status(500).json({ success: false, message: `Internal server error at DeleteBlog: ${error}` });
+    }
+};
