@@ -31,3 +31,52 @@ export const CreateBlog = async (req: AuthRequest, res: Response) => {
         res.status(500).json({ success: false, message: `Internal server error at CreateBlog: ${error}` });
     }
 }
+
+export const UpdateBlog = async (req: AuthRequest, res: Response) => {
+    const { id } = req.params;
+    const { title, description, blog_content, category } = req.body;
+
+    const file = req.file;
+
+    const blog = await sql`SELECT * FROM blogs WHERE id = ${id}`;
+    if (blog.length === 0) {
+        return res.status(404).json({ success: false, message: "Blog not found" });
+    }
+    if (blog[0].author !== req.user?.id) {
+        return res.status(403).json({ success: false, message: "You are not authorized to update this blog" });
+    }
+
+    let imageUrl = blog[0].image_url;
+
+    if (file) {
+        const fileBuffer = await getBuffer(file);
+        if (!fileBuffer) return res.status(400).json({ success: false, message: "Invalid file data" });
+        const BlogImage = await cloudinary.uploader.upload(fileBuffer, {
+            folder: "blog_images",
+            resource_type: "image",
+        });
+        imageUrl = BlogImage.secure_url;
+    }
+
+    try {
+        const result = await sql`UPDATE blogs SET 
+            title = COALESCE(${title}, title),
+            description = COALESCE(${description}, description),
+            blog_content = COALESCE(${blog_content}, blog_content),
+            category = COALESCE(${category}, category),
+            image_url = COALESCE(${imageUrl}, image_url)
+            WHERE id = ${id} RETURNING *`;
+        res.status(200).json({ success: true, message: "Blog updated successfully", blog: result[0] });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: `Internal server error at UpdateBlog: ${error}` });
+    }
+}
+
+export const GetAllBlogs = async (req: Request, res: Response) => {
+    try {
+        const blogs = await sql`SELECT * FROM blogs ORDER BY created_at DESC`;
+        res.status(200).json({ success: true, blogs });
+    } catch (error) {
+        res.status(500).json({ success: false, message: `Internal server error at GetAllBlogs: ${error}` });
+    }
+}
