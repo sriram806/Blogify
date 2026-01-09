@@ -72,15 +72,6 @@ export const UpdateBlog = async (req: AuthRequest, res: Response) => {
     }
 }
 
-export const GetAllBlogs = async (req: Request, res: Response) => {
-    try {
-        const blogs = await sql`SELECT * FROM blogs ORDER BY created_at DESC`;
-        res.status(200).json({ success: true, blogs });
-    } catch (error) {
-        res.status(500).json({ success: false, message: `Internal server error at GetAllBlogs: ${error}` });
-    }
-}
-
 // Delete Bolg
 export const DeleteBlog = async (req: AuthRequest, res: Response) => {
     try {
