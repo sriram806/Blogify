@@ -33,6 +33,7 @@
     "@types/mongoose": "^5.11.96",
     "@types/multer": "^2.0.0",
     "@types/nodemailer": "^7.0.4",
+    "@upstash/redis": "^1.36.1",
     "axios": "^1.13.2",
     "cloudinary": "^2.8.0",
     "concurrently": "^9.2.1",
@@ -46,6 +47,7 @@
     "nodemailer": "^7.0.11",
     "parse-data-uri": "^0.2.0",
     "path": "^0.12.7",
+    "redis": "^5.10.0",
     "typescript": "^5.9.3",
     "url": "^0.11.4"
   },

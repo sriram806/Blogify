@@ -8,6 +8,6 @@ Router.get("/", async (req, res) => {
 });
 
 Router.get("/all-blogs", getallBlogs);
-Router.get("/blog/:id", getBlogById);
+Router.get("/get/:id", getBlogById);
 
 export default Router;
