@@ -2,12 +2,15 @@ import express from "express";
 import dotenv from "dotenv";
 import Router from "./routers/blog.router.js";
 import redisClient from "./config/redisDB.js";
+import { startCacheConsumer } from "./utils/consumer.js";
 dotenv.config(); 
 
 const app = express();
 app.use(express.json());
 
 const PORT = process.env.PORT || 5002;
+
+startCacheConsumer();
 
 app.get("/", (req, res) => {
   res.send("Blog Service is running on port " + PORT);

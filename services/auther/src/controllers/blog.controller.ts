@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import getBuffer from "../utils/buffer.service";
 import { v2 as cloudinary } from "cloudinary";
 import { sql } from "../utils/DataBase";
+import { invalidateCache } from "../utils/rabbitmq";
 
 interface AuthRequest extends Request {
     user?: { id: string };
@@ -24,6 +25,8 @@ export const CreateBlog = async (req: AuthRequest, res: Response) => {
 
         const result = await sql`INSERT INTO blogs(title, description, blog_content, category, author, image_url)
         VALUES (${title}, ${description}, ${blog_content}, ${category}, ${req.user?.id}, ${BlogImage.secure_url}) RETURNING *`;
+
+        await invalidateCache(["blogs:*"]);
 
         res.status(201).json({ success: true, message: "Blog created successfully", blog: result[0] });
 

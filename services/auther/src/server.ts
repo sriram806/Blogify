@@ -4,10 +4,13 @@ import { initDB } from './utils/DataBase';
 import BlogRouter from './routes/blog.routes';
 import { v2 as cloudinary } from 'cloudinary';
 import cookieParser from 'cookie-parser';
+import { connectRabbitMQ } from './utils/rabbitmq.js';
 
 dotenv.config();
 
 const app = express();
+
+connectRabbitMQ();
 
 const PORT = process.env.PORT || 5001;
 
