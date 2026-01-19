@@ -1,7 +1,6 @@
 import { createClient } from 'redis';
 import dotenv from 'dotenv';
 
-// Load environment variables
 dotenv.config();
 const redisClient = createClient({
     url: process.env.REDIS_DB,
