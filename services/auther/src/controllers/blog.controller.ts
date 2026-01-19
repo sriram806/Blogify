@@ -69,6 +69,9 @@ export const UpdateBlog = async (req: AuthRequest, res: Response) => {
             category = COALESCE(${category}, category),
             image_url = COALESCE(${imageUrl}, image_url)
             WHERE id = ${id} RETURNING *`;
+        
+        await invalidateCache(["blogs:*"]);
+        
         res.status(200).json({ success: true, message: "Blog updated successfully", blog: result[0] });
     } catch (error) {
         return res.status(500).json({ success: false, message: `Internal server error at UpdateBlog: ${error}` });
@@ -89,6 +92,8 @@ export const DeleteBlog = async (req: AuthRequest, res: Response) => {
         await sql`DELETE FROM blogs WHERE id = ${id}`;
         await sql`DELETE FROM comments WHERE blog_id = ${id}`;
         await sql`DELETE FROM likes WHERE blog_id = ${id}`;
+
+        await invalidateCache(["blogs:*"]);
 
         return res.status(200).json({ success: true, message: "Blog and related data deleted successfully" });
 

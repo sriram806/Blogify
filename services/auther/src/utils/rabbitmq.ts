@@ -1,10 +1,10 @@
-import ampq from 'amqplib';
+import amqp from 'amqplib';
 
-let channel: ampq.Channel;
+let channel: amqp.Channel;
 
 export const connectRabbitMQ = async () => {
     try {
-        const connection = await ampq.connect({
+        const connection = await amqp.connect({
             protocol: 'amqp',
             hostname: process.env.RABBITMQ_HOST,
             port: Number(process.env.RABBITMQ_PORT),
@@ -16,6 +16,7 @@ export const connectRabbitMQ = async () => {
         console.log('Connected to RabbitMQ');
     } catch (error: any) {
         console.error('RabbitMQ connection error:', error);
+        throw error;
     }
 }
 
@@ -30,16 +31,16 @@ export const publishToQueue = async (queueName: string, message: any) => {
     channel.sendToQueue(queueName, Buffer.from(JSON.stringify(message)), { persistent: true });
 }
 
-export const invalidateCache = async (chacheKey: string[]) => {
+export const invalidateCache = async (cacheKey: string[]) => {
     try {
         const message = {
             action: "invalidateCache",
-            keys: chacheKey
+            keys: cacheKey
         };
 
         await publishToQueue('invalidateCache', message);
 
-        console.log('Cache invalidation message published for keys:', chacheKey);
+        console.log('Cache invalidation message published for keys:', cacheKey);
     } catch (error: any) {
         console.error('Error invalidating cache:', error);
     }
