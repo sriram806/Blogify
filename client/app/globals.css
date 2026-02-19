@@ -1,21 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Pasupu (Turmeric) inspired */
+  --background: #F6C453;   /* warm turmeric gold */
+  /* Yerra Chandnam inspired */
+  --foreground: #821e1e;   /* deep red sandalwood */
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    /* Pasupu Chandnam deeper tone */
+    --background: #3B2A1A;  /* earthy temple tone */
+    --foreground: #F2E6C9;  /* soft sandalwood cream */
   }
 }
 
