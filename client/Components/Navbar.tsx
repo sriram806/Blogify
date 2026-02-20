@@ -26,15 +26,15 @@ const Navbar = () => {
 
                 <button
                     className="
-  bg-linear-to-r from-yellow-300/70 to-amber-400/70
-  backdrop-blur-md
-  py-1.5 px-6 rounded-full
-  border border-yellow-100/30
-  text-yellow-900 font-semibold
-  shadow-lg hover:from-yellow-300 hover:to-amber-400
-  hover:shadow-yellow-300/40
-  transition-all duration-300
-  "
+                        bg-linear-to-r from-yellow-300/70 to-amber-400/70
+                        backdrop-blur-md
+                        py-1.5 px-6 rounded-full
+                        border border-yellow-100/30
+                      text-yellow-900 font-semibold
+                        shadow-lg hover:from-yellow-300 hover:to-amber-400
+                        hover:shadow-yellow-300/40
+                        transition-all duration-300
+                    "
                 >
                     _blogify
                 </button>
