@@ -32,7 +32,7 @@ const Header = () => {
       <header className="sticky top-0 z-50 w-full">
         <TopBanner />
         {/* Navbar */}
-        <div className="bg-white/50 backdrop-blur-md border-b border-gray-200">
+        <div className="bg-white/50 backdrop-blur-sm ">
           <div className="container mx-auto px-4">
             <div className="flex items-center justify-between gap-4">
               {/* Logo */}

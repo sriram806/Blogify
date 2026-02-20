@@ -91,7 +91,6 @@ export default function Hero() {
               <p className="font-semibold">How AI is changing web development</p>
             </div>
           </div>
-          
 
         </div>
       </div>
