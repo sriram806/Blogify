@@ -4,10 +4,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { FaArrowRight, FaSearch, FaUserCircle } from "react-icons/fa";
+import { FaSearch, FaUserCircle } from "react-icons/fa";
 import { TiThMenu } from "react-icons/ti";
 import { IoClose } from "react-icons/io5";
 import { TopBanner } from "./TopBanner";
+import LoginModal from "@/Components/Auth/LoginModal";
+import RegisterModal from "@/Components/Auth/RegisterModal";
 
 const navItems = [
   { name: "Home", href: "/" },
@@ -20,6 +22,8 @@ const Header = () => {
   const pathname = usePathname();
   const [search, setSearch] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [registerOpen, setRegisterOpen] = useState(false);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,9 +83,13 @@ const Header = () => {
                 </nav>
 
                 {/* Profile */}
-                <div className="flex items-center cursor-pointer bg-white/60 px-3 py-2 rounded-full border border-gray-200 hover:bg-white transition">
+                <button
+                  type="button"
+                  onClick={() => setLoginOpen(true)}
+                  className="flex items-center cursor-pointer bg-white/60 px-3 py-2 rounded-full border border-gray-200 hover:bg-white transition"
+                >
                   <FaUserCircle className="text-2xl text-gray-600" />
-                </div>
+                </button>
               </div>
 
               {/* Mobile Menu Button */}
@@ -153,8 +161,48 @@ const Header = () => {
               <p className="text-sm text-gray-500">View Profile</p>
             </div>
           </div>
+          <div className="mt-4 flex gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setLoginOpen(true);
+                setMenuOpen(false);
+              }}
+              className="flex-1 rounded-full bg-black px-4 py-2 text-sm font-medium text-white"
+            >
+              Login
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setRegisterOpen(true);
+                setMenuOpen(false);
+              }}
+              className="flex-1 rounded-full border border-gray-300 px-4 py-2 text-sm font-medium text-gray-800"
+            >
+              Register
+            </button>
+          </div>
         </div>
       </div>
+
+      <LoginModal
+        isOpen={loginOpen}
+        onClose={() => setLoginOpen(false)}
+        onSwitchToRegister={() => {
+          setLoginOpen(false);
+          setRegisterOpen(true);
+        }}
+      />
+
+      <RegisterModal
+        isOpen={registerOpen}
+        onClose={() => setRegisterOpen(false)}
+        onSwitchToLogin={() => {
+          setRegisterOpen(false);
+          setLoginOpen(true);
+        }}
+      />
     </>
   );
 };
