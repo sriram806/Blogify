@@ -3,11 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FaUserCircle } from "react-icons/fa";
 import { TiThMenu } from "react-icons/ti";
-import { IoClose } from "react-icons/io5";
 import { TopBanner } from "./TopBanner";
+import SmallMediumMenu from "./SmallMediumMenu";
 import LoginModal from "@/Components/Auth/LoginModal";
 import RegisterModal from "@/Components/Auth/RegisterModal";
 import { useAuth } from "@/Components/Auth/AuthProvider";
@@ -36,6 +36,22 @@ const Header = () => {
   const [registerOpen, setRegisterOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
+  const headerRef = useRef<HTMLElement | null>(null);
+  const [menuTopOffset, setMenuTopOffset] = useState(0);
+
+  useEffect(() => {
+    const updateMenuTopOffset = () => {
+      if (!headerRef.current) return;
+      setMenuTopOffset(headerRef.current.getBoundingClientRect().height);
+    };
+
+    updateMenuTopOffset();
+    window.addEventListener("resize", updateMenuTopOffset);
+
+    return () => {
+      window.removeEventListener("resize", updateMenuTopOffset);
+    };
+  }, [menuOpen]);
 
   const handleLogout = async () => {
     try {
@@ -47,7 +63,6 @@ const Header = () => {
         }
       );
     } catch {
-      // ignore logout errors
     } finally {
       setUser(null);
       setProfileOpen(false);
@@ -57,8 +72,10 @@ const Header = () => {
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full">
-        <TopBanner />
+      <header ref={headerRef} className="sticky top-0 z-50 w-full">
+        <div className={menuOpen ? "hidden lg:block" : "block"}>
+          <TopBanner />
+        </div>
         {/* Navbar */}
         <div className="bg-white/50 backdrop-blur-sm ">
           <div className="container mx-auto px-4">
@@ -76,7 +93,7 @@ const Header = () => {
 
 
               {/* Desktop Nav + Profile */}
-              <div className="hidden md:flex items-center gap-8">
+              <div className="hidden lg:flex items-center gap-8">
                 <nav className="flex gap-8">
                   {navItems.map((item) => {
                     const isActive = pathname === item.href;
@@ -210,7 +227,7 @@ const Header = () => {
               {/* Mobile Menu Button */}
               <button
                 onClick={() => setMenuOpen(true)}
-                className="md:hidden text-2xl"
+                className="lg:hidden text-2xl"
               >
                 <TiThMenu />
               </button>
@@ -219,116 +236,23 @@ const Header = () => {
         </div>
       </header>
 
-      {/* Overlay */}
-      {menuOpen && (
-        <div
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
-          onClick={() => setMenuOpen(false)}
-        />
-      )}
-
-      {/* Mobile Menu Sheet */}
-      <div
-        className={`fixed inset-0 z-50 transition-all duration-300 ${menuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-          }`}
-      >
-        <div className="absolute inset-0 bg-black/40" onClick={() => setMenuOpen(false)} />
-
-        <div
-          className={`absolute inset-x-0 top-0 mx-auto w-full max-w-md rounded-b-3xl bg-white shadow-2xl transition-transform duration-300 ${menuOpen ? "translate-y-0" : "-translate-y-full"
-            }`}
-        >
-          <div className="px-6 pt-6 pb-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-gray-500">Menu</p>
-            </div>
-            <button onClick={() => setMenuOpen(false)}>
-              <IoClose className="text-xl" />
-            </button>
-          </div>
-
-
-          {/* Nav Items */}
-          <nav className="px-6 pb-6">
-            <div className="rounded-2xl border border-gray-100 bg-white">
-              {navItems.map((item, index) => (
-                <div key={item.name} className="border-b last:border-b-0">
-                  <Link
-                    href={item.href}
-                    onClick={() => setMenuOpen(false)}
-                    className="flex items-center justify-between px-4 py-4 text-sm font-semibold text-gray-800"
-                  >
-                    {item.name}
-                    {item.children && <span className="text-xs text-gray-400">›</span>}
-                  </Link>
-
-                  {item.children && (
-                    <div className="px-4 pb-4 flex flex-col gap-2">
-                      {item.children.map((child) => (
-                        <Link
-                          key={child.name}
-                          href={child.href}
-                          onClick={() => setMenuOpen(false)}
-                          className="text-sm text-gray-500 hover:text-black transition"
-                        >
-                          {child.name}
-                        </Link>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </nav>
-
-          {/* Profile Section */}
-          <div className="px-6 pb-8">
-            <div className="flex items-center gap-3 bg-gray-100 p-3 rounded-2xl">
-              <FaUserCircle className="text-3xl text-gray-600" />
-              <div>
-                <p className="font-semibold">{user?.name || "Guest User"}</p>
-                <p className="text-sm text-gray-500">
-                  {user?.email || "View Profile"}
-                </p>
-              </div>
-            </div>
-            <div className="mt-4 flex flex-col gap-3">
-              {!user ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setLoginOpen(true);
-                      setMenuOpen(false);
-                    }}
-                    className="w-full rounded-full bg-black px-4 py-3 text-sm font-medium text-white"
-                  >
-                    Login
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRegisterOpen(true);
-                      setMenuOpen(false);
-                    }}
-                    className="w-full rounded-full border border-gray-300 px-4 py-3 text-sm font-medium text-gray-800"
-                  >
-                    Register
-                  </button>
-                </>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="w-full rounded-full bg-gray-900 px-4 py-3 text-sm font-medium text-white"
-                >
-                  Logout
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+      <SmallMediumMenu
+        menuOpen={menuOpen}
+        menuTopOffset={menuTopOffset}
+        pathname={pathname}
+        navItems={navItems}
+        user={user}
+        onClose={() => setMenuOpen(false)}
+        onOpenLogin={() => {
+          setLoginOpen(true);
+          setMenuOpen(false);
+        }}
+        onOpenRegister={() => {
+          setRegisterOpen(true);
+          setMenuOpen(false);
+        }}
+        onLogout={handleLogout}
+      />
 
       <LoginModal
         isOpen={loginOpen}
