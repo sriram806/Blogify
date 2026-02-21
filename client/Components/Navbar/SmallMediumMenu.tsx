@@ -47,7 +47,7 @@ const SmallMediumMenu = ({
     <>
       {menuOpen && (
         <div
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden"
+          className="fixed inset-0 bg-black/10 backdrop-blur-sm z-40 lg:hidden"
           onClick={onClose}
         />
       )}
@@ -59,7 +59,7 @@ const SmallMediumMenu = ({
         <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
         <div
-          className={`absolute inset-x-0 top-0 mx-auto w-full max-w-md rounded-b-3xl bg-white shadow-2xl transition-transform duration-300 ${menuOpen ? "translate-y-0" : "-translate-y-full"}`}
+          className={`absolute inset-x-0 top-0 mx-auto w-full max-w-md rounded bg-white shadow-2xl transition-transform duration-300 ${menuOpen ? "translate-y-0" : "-translate-y-full"}`}
         >
           <div className="px-6 pt-6 pb-4 flex items-center justify-between">
             <div>
@@ -68,14 +68,14 @@ const SmallMediumMenu = ({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-full p-2 text-gray-700 hover:bg-gray-100 transition"
+              className="rounded p-2 text-gray-700 hover:bg-gray-100 transition"
             >
               <IoClose className="text-xl" />
             </button>
           </div>
 
           <nav className="px-6 pb-6">
-            <div className="rounded-2xl border border-gray-100 bg-white">
+            <div className="rounded border border-gray-100 bg-white">
               {navItems.map((item) => {
                 const isItemActive =
                   pathname === item.href ||
@@ -112,8 +112,8 @@ const SmallMediumMenu = ({
             </div>
           </nav>
 
-          <div className="px-6 pb-8">
-            <div className="flex items-center gap-3 bg-gray-100 p-3 rounded-2xl">
+          <div className="px-6 py-15 pb-8">
+            <div className="flex items-center gap-3 bg-gray-100 p-3 rounded">
               <FaUserCircle className="text-3xl text-gray-600" />
               <div>
                 <p className="font-semibold">{user?.name || "Guest User"}</p>
