@@ -3,7 +3,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { FaArrowRight } from "react-icons/fa";
-import BlogSection from "@/Components/Blog/BlogSection";
 import FeaturedPage from "@/Components/Home/FeaturedPage";
 import TrendingPage from "@/Components/Home/TrendingPage";
 import RecommandPage from "@/Components/Home/RecommandPage";
