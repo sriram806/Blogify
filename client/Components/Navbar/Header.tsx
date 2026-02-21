@@ -4,32 +4,56 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { FaSearch, FaUserCircle } from "react-icons/fa";
+import { FaUserCircle } from "react-icons/fa";
 import { TiThMenu } from "react-icons/ti";
 import { IoClose } from "react-icons/io5";
 import { TopBanner } from "./TopBanner";
 import LoginModal from "@/Components/Auth/LoginModal";
 import RegisterModal from "@/Components/Auth/RegisterModal";
+import { useAuth } from "@/Components/Auth/AuthProvider";
 
 const navItems = [
   { name: "Home", href: "/" },
   { name: "About", href: "/about" },
-  { name: "Blogs", href: "/blog" },
+  {
+    name: "Blogs",
+    href: "/blog",
+    children: [
+      { name: "Featured", href: "/#featured" },
+      { name: "Trending", href: "/#trending" },
+      { name: "Recommended", href: "/#recommended" },
+      { name: "Latest", href: "/blog?sort=latest" },
+    ],
+  },
   { name: "Contact", href: "/contact" },
 ];
 
 const Header = () => {
   const pathname = usePathname();
-  const [search, setSearch] = useState("");
+  const { user, setUser } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [registerOpen, setRegisterOpen] = useState(false);
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [profileOpen, setProfileOpen] = useState(false);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!search.trim()) return;
-    window.location.href = `/blog?search=${search}`;
+  const handleLogout = async () => {
+    try {
+      await fetch(
+        `${process.env.NEXT_PUBLIC_USER_API_URL || "http://localhost:5000/api/v1/users"}/logout`,
+        {
+          method: "POST",
+          credentials: "include",
+        }
+      );
+    } catch {
+      // ignore logout errors
+    } finally {
+      setUser(null);
+      setProfileOpen(false);
+    }
   };
+
 
   return (
     <>
@@ -50,46 +74,137 @@ const Header = () => {
                 />
               </Link>
 
-              {/* Desktop Search */}
-              <form
-                onSubmit={handleSearch}
-                className="hidden md:flex items-center bg-white/60 px-3 py-2 rounded-full border-2 border-gray-300 w-1/3"
-              >
-                <FaSearch className="text-gray-500 mr-2" />
-                <input
-                  type="text"
-                  placeholder="Search blogs..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="bg-transparent outline-none text-sm w-full"
-                />
-              </form>
 
               {/* Desktop Nav + Profile */}
               <div className="hidden md:flex items-center gap-8">
                 <nav className="flex gap-8">
                   {navItems.map((item) => {
                     const isActive = pathname === item.href;
+                    if (!item.children) {
+                      return (
+                        <Link
+                          key={item.name}
+                          href={item.href}
+                          className={`transition-colors ${isActive ? "text-black font-semibold" : "text-gray-700 hover:text-black"}`}
+                        >
+                          {item.name}
+                        </Link>
+                      );
+                    }
+
                     return (
-                      <Link
+                      <div
                         key={item.name}
-                        href={item.href}
-                        className={`transition-colors ${isActive ? "text-black font-semibold" : "text-gray-700 hover:text-black"}`}
+                        className="relative"
+                        onMouseEnter={() => setActiveDropdown(item.name)}
+                        onMouseLeave={() => setActiveDropdown(null)}
                       >
-                        {item.name}
-                      </Link>
+                        <button
+                          type="button"
+                          className={`flex items-center gap-2 transition-colors ${isActive ? "text-black font-semibold" : "text-gray-700 hover:text-black"}`}
+                        >
+                          {item.name}
+                          <span className="text-xs">▾</span>
+                        </button>
+
+                        {activeDropdown === item.name && (
+                          <div className="absolute top-full mt-3 w-56 rounded-2xl border border-gray-200 bg-white shadow-xl overflow-hidden">
+                            <div className="px-4 py-3 border-b border-gray-100">
+                              <p className="text-xs uppercase tracking-[0.2em] text-gray-500">
+                                Explore
+                              </p>
+                              <p className="text-sm font-semibold text-black">Blog Highlights</p>
+                            </div>
+                            <div className="py-2">
+                              {item.children.map((child) => (
+                                <Link
+                                  key={child.name}
+                                  href={child.href}
+                                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black transition"
+                                >
+                                  {child.name}
+                                </Link>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     );
                   })}
                 </nav>
 
                 {/* Profile */}
-                <button
-                  type="button"
-                  onClick={() => setLoginOpen(true)}
-                  className="flex items-center cursor-pointer bg-white/60 px-3 py-2 rounded-full border border-gray-200 hover:bg-white transition"
-                >
-                  <FaUserCircle className="text-2xl text-gray-600" />
-                </button>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setProfileOpen((prev) => !prev)}
+                    className="flex items-center gap-2 cursor-pointer bg-white/60 px-3 py-2 rounded-full border border-gray-200 hover:bg-white transition"
+                  >
+                    <FaUserCircle className="text-2xl text-gray-600" />
+                    <span className="text-sm text-gray-700">
+                      {user?.name ? user.name.split(" ")[0] : "Account"}
+                    </span>
+                  </button>
+
+                  {profileOpen && (
+                    <div className="absolute right-0 mt-3 w-64 rounded-2xl border border-gray-200 bg-white shadow-xl overflow-hidden">
+                      <div className="px-4 py-4 border-b border-gray-100">
+                        <p className="text-xs uppercase tracking-[0.2em] text-gray-500">
+                          {user ? "Signed in" : "Welcome"}
+                        </p>
+                        <p className="text-sm font-semibold text-black">
+                          {user?.name || "Guest"}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {user?.email || "Login to personalize your feed"}
+                        </p>
+                      </div>
+
+                      {!user && (
+                        <div className="p-4 space-y-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setLoginOpen(true);
+                              setProfileOpen(false);
+                            }}
+                            className="w-full rounded-full bg-black px-4 py-2 text-sm font-medium text-white"
+                          >
+                            Login
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setRegisterOpen(true);
+                              setProfileOpen(false);
+                            }}
+                            className="w-full rounded-full border border-gray-300 px-4 py-2 text-sm font-medium text-gray-800"
+                          >
+                            Register
+                          </button>
+                        </div>
+                      )}
+
+                      {user && (
+                        <div className="p-4 space-y-2">
+                          <Link
+                            href="/profile"
+                            className="block rounded-full border border-gray-200 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                          >
+                            View profile
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={handleLogout}
+                            className="w-full rounded-full bg-gray-900 px-4 py-2 text-sm font-medium text-white"
+                          >
+                            Logout
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Mobile Menu Button */}
@@ -112,76 +227,105 @@ const Header = () => {
         />
       )}
 
-      {/* Mobile Drawer */}
+      {/* Mobile Menu Sheet */}
       <div
-        className={`fixed top-0 right-0 h-full w-72 bg-white/90 backdrop-blur-xl shadow-xl z-50 transform transition-transform duration-300 ${menuOpen ? "translate-x-0" : "translate-x-full"
+        className={`fixed inset-0 z-50 transition-all duration-300 ${menuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
           }`}
       >
-        <div className="p-5 flex justify-between items-center border-b">
-          <h2 className="font-semibold text-lg">Menu</h2>
-          <button onClick={() => setMenuOpen(false)}>
-            <IoClose className="text-xl" />
-          </button>
-        </div>
+        <div className="absolute inset-0 bg-black/40" onClick={() => setMenuOpen(false)} />
 
-        {/* Mobile Search */}
-        <form onSubmit={handleSearch} className="p-4">
-          <div className="flex items-center bg-gray-100 px-3 py-2 rounded-full">
-            <FaSearch className="text-gray-500 mr-2" />
-            <input
-              type="text"
-              placeholder="Search blogs..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="bg-transparent outline-none text-sm w-full"
-            />
-          </div>
-        </form>
-
-        {/* Nav Items */}
-        <nav className="flex flex-col gap-4 px-6 mt-2">
-          {navItems.map((item) => (
-            <Link
-              key={item.name}
-              href={item.href}
-              onClick={() => setMenuOpen(false)}
-              className="text-lg font-medium text-gray-700 hover:text-black transition"
-            >
-              {item.name}
-            </Link>
-          ))}
-        </nav>
-
-        {/* Profile Section */}
-        <div className="mt-8 px-6">
-          <div className="flex items-center gap-3 bg-gray-100 p-3 rounded-xl">
-            <FaUserCircle className="text-3xl text-gray-600" />
+        <div
+          className={`absolute inset-x-0 top-0 mx-auto w-full max-w-md rounded-b-3xl bg-white shadow-2xl transition-transform duration-300 ${menuOpen ? "translate-y-0" : "-translate-y-full"
+            }`}
+        >
+          <div className="px-6 pt-6 pb-4 flex items-center justify-between">
             <div>
-              <p className="font-semibold">Guest User</p>
-              <p className="text-sm text-gray-500">View Profile</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-gray-500">Menu</p>
             </div>
+            <button onClick={() => setMenuOpen(false)}>
+              <IoClose className="text-xl" />
+            </button>
           </div>
-          <div className="mt-4 flex gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setLoginOpen(true);
-                setMenuOpen(false);
-              }}
-              className="flex-1 rounded-full bg-black px-4 py-2 text-sm font-medium text-white"
-            >
-              Login
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setRegisterOpen(true);
-                setMenuOpen(false);
-              }}
-              className="flex-1 rounded-full border border-gray-300 px-4 py-2 text-sm font-medium text-gray-800"
-            >
-              Register
-            </button>
+
+
+          {/* Nav Items */}
+          <nav className="px-6 pb-6">
+            <div className="rounded-2xl border border-gray-100 bg-white">
+              {navItems.map((item, index) => (
+                <div key={item.name} className="border-b last:border-b-0">
+                  <Link
+                    href={item.href}
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center justify-between px-4 py-4 text-sm font-semibold text-gray-800"
+                  >
+                    {item.name}
+                    {item.children && <span className="text-xs text-gray-400">›</span>}
+                  </Link>
+
+                  {item.children && (
+                    <div className="px-4 pb-4 flex flex-col gap-2">
+                      {item.children.map((child) => (
+                        <Link
+                          key={child.name}
+                          href={child.href}
+                          onClick={() => setMenuOpen(false)}
+                          className="text-sm text-gray-500 hover:text-black transition"
+                        >
+                          {child.name}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </nav>
+
+          {/* Profile Section */}
+          <div className="px-6 pb-8">
+            <div className="flex items-center gap-3 bg-gray-100 p-3 rounded-2xl">
+              <FaUserCircle className="text-3xl text-gray-600" />
+              <div>
+                <p className="font-semibold">{user?.name || "Guest User"}</p>
+                <p className="text-sm text-gray-500">
+                  {user?.email || "View Profile"}
+                </p>
+              </div>
+            </div>
+            <div className="mt-4 flex flex-col gap-3">
+              {!user ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLoginOpen(true);
+                      setMenuOpen(false);
+                    }}
+                    className="w-full rounded-full bg-black px-4 py-3 text-sm font-medium text-white"
+                  >
+                    Login
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRegisterOpen(true);
+                      setMenuOpen(false);
+                    }}
+                    className="w-full rounded-full border border-gray-300 px-4 py-3 text-sm font-medium text-gray-800"
+                  >
+                    Register
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="w-full rounded-full bg-gray-900 px-4 py-3 text-sm font-medium text-white"
+                >
+                  Logout
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>

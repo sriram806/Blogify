@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { FaArrowRight } from "react-icons/fa";
 import FeaturedPage from "@/Components/Home/FeaturedPage";
@@ -128,6 +128,13 @@ const sampleBlogs = [
 
 export default function HomePage() {
   const { greeting, setGreeting } = useAuth();
+  const [search, setSearch] = useState("");
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!search.trim()) return;
+    window.location.href = `/blog?search=${search}`;
+  };
 
   useEffect(() => {
     if (!greeting) return;
@@ -174,6 +181,26 @@ export default function HomePage() {
                 Discover curated articles on technology, design, productivity,
                 and personal growth. Learn from real experiences and practical insights.
               </p>
+
+              {/* Search */}
+              <form
+                onSubmit={handleSearch}
+                className="mt-6 flex items-center bg-white/80 px-4 py-3 rounded-full border border-gray-200 shadow-sm max-w-lg"
+              >
+                <input
+                  type="text"
+                  placeholder="Search blogs, topics, or authors..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="bg-transparent outline-none text-sm sm:text-base w-full"
+                />
+                <button
+                  type="submit"
+                  className="ml-3 px-4 py-2 rounded-full bg-black text-white text-sm font-medium hover:bg-gray-800 transition"
+                >
+                  Search
+                </button>
+              </form>
 
               {/* CTA */}
               <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row gap-3 sm:gap-4">
