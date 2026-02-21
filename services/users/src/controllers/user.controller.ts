@@ -1,4 +1,4 @@
-import { Request, response, Response } from "express";
+import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import User from "../model/user.model.js";
 import { createSendToken } from "../middleware/token.js";
@@ -43,10 +43,7 @@ export const Login = async (req: Request, res: Response): Promise<Response> => {
       email?: string;
       password?: string;
     };
-
-    /* =========================
-       EMAIL + PASSWORD LOGIN
-    ========================= */
+    
     if (email && password) {
       const user = await User.findOne({ email }).select("+password");
 
@@ -74,13 +71,10 @@ export const Login = async (req: Request, res: Response): Promise<Response> => {
       return createSendToken(userObject, 200, res, "Login successful");
     }
 
-    /* =========================
-       GOOGLE LOGIN
-    ========================= */
     if (!code) {
       return res.status(400).json({
         success: false,
-        message: "Authorization code or email/password is required",
+        message: "Authorization code or is required",
       });
     }
 
@@ -114,7 +108,7 @@ export const Login = async (req: Request, res: Response): Promise<Response> => {
     console.error(error);
     return res.status(500).json({
       success: false,
-      message: `Internal Server Error: ${error.message}`,
+      message: `Internal Server Error at Login: ${error.message}`,
     });
   }
 };
