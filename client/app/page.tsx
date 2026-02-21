@@ -1,12 +1,14 @@
 "use client";
 
 import Image from "next/image";
+import { useEffect } from "react";
 import Link from "next/link";
 import { FaArrowRight } from "react-icons/fa";
 import FeaturedPage from "@/Components/Home/FeaturedPage";
 import TrendingPage from "@/Components/Home/TrendingPage";
 import RecommandPage from "@/Components/Home/RecommandPage";
 import NewsletterSection from "@/Components/Home/NewsLetter";
+import { useAuth } from "@/Components/Auth/AuthProvider";
 
 // Mock data - replace with actual data from API
 const sampleBlogs = [
@@ -125,8 +127,23 @@ const sampleBlogs = [
 ];
 
 export default function HomePage() {
+  const { greeting, setGreeting } = useAuth();
+
+  useEffect(() => {
+    if (!greeting) return;
+    const timer = setTimeout(() => setGreeting(null), 3500);
+    return () => clearTimeout(timer);
+  }, [greeting, setGreeting]);
+
   return (
     <>
+      {greeting && (
+        <div className="fixed top-20 right-4 z-50 rounded-2xl border border-black/10 bg-white/95 px-4 py-3 text-sm shadow-lg backdrop-blur-sm">
+          <p className="font-semibold text-black">{greeting}</p>
+          <p className="text-gray-600">Glad to have you here.</p>
+        </div>
+      )}
+
       {/* Hero Section */}
       <section className="relative overflow-hidden drop-shadow-sm">
 

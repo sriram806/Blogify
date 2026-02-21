@@ -1,10 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { IoClose } from "react-icons/io5";
-import { FaGithub, FaGoogle } from "react-icons/fa";
+import { FaGithub } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
+import { useAuth } from "@/Components/Auth/AuthProvider";
+import { AUTH_CONFIG } from "@/Components/Auth/auth.config";
+
+declare global {
+    interface Window {
+        google?: any;
+    }
+}
 
 type RegisterModalProps = {
     isOpen: boolean;
@@ -12,16 +20,15 @@ type RegisterModalProps = {
     onSwitchToLogin: () => void;
 };
 
-const API_BASE =
-    process.env.NEXT_PUBLIC_USER_API_URL || "http://localhost:5000/api/v1/users";
-const GOOGLE_AUTH_URL = process.env.NEXT_PUBLIC_GOOGLE_AUTH_URL;
-const GITHUB_AUTH_URL = process.env.NEXT_PUBLIC_GITHUB_AUTH_URL;
+const { apiBase: API_BASE, githubAuthUrl: GITHUB_AUTH_URL, googleClientId: GOOGLE_CLIENT_ID } =
+    AUTH_CONFIG;
 
 const RegisterModal = ({
     isOpen,
     onClose,
     onSwitchToLogin,
 }: RegisterModalProps) => {
+    const { setUser, setGreeting } = useAuth();
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -29,14 +36,86 @@ const RegisterModal = ({
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
     const [formVisible, setFormVisible] = useState(false);
+    const [googleReady, setGoogleReady] = useState(false);
 
-    const handleSocialAuth = (provider: "google" | "github") => {
-        const url = provider === "google" ? GOOGLE_AUTH_URL : GITHUB_AUTH_URL;
-        if (!url) {
-            setError(`${provider === "google" ? "Google" : "GitHub"} auth not configured.`);
+    useEffect(() => {
+        if (!GOOGLE_CLIENT_ID) return;
+        if (window.google) {
+            setGoogleReady(true);
             return;
         }
-        window.location.href = url;
+
+        const script = document.createElement("script");
+        script.src = "https://accounts.google.com/gsi/client";
+        script.async = true;
+        script.onload = () => setGoogleReady(true);
+        document.head.appendChild(script);
+
+        return () => {
+            document.head.removeChild(script);
+        };
+    }, []);
+
+    const googleCodeClient = useMemo(() => {
+        if (!googleReady || !window.google || !GOOGLE_CLIENT_ID) return null;
+        return window.google.accounts.oauth2.initCodeClient({
+            client_id: GOOGLE_CLIENT_ID,
+            scope: "openid email profile",
+            callback: async (response: { code?: string; error?: string }) => {
+                if (!response?.code) {
+                    setError("Google authentication failed");
+                    return;
+                }
+
+                setLoading(true);
+                setError("");
+                setSuccess("");
+
+                try {
+                    const res = await fetch(`${API_BASE}/login`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        credentials: "include",
+                        body: JSON.stringify({ code: response.code }),
+                    });
+
+                    const result = await res.json();
+
+                    if (!res.ok || !result?.success) {
+                        setError(result?.message || "Google login failed");
+                        return;
+                    }
+
+                    setUser(result?.data?.user || null);
+                    setGreeting(`Hi ${result?.data?.user?.name || "there"}, welcome to Blogify!`);
+                    setSuccess("Login successful!");
+                    setTimeout(() => onClose(), 1200);
+                } catch {
+                    setError("Unable to connect to server");
+                } finally {
+                    setLoading(false);
+                }
+            },
+        });
+    }, [googleReady, onClose, setGreeting, setUser]);
+
+    const handleSocialAuth = (provider: "google" | "github") => {
+        if (provider === "google") {
+            if (googleCodeClient) {
+                googleCodeClient.requestCode();
+                return;
+            }
+
+            setError("Google auth not configured.");
+            return;
+        }
+
+        if (!GITHUB_AUTH_URL) {
+            setError("GitHub auth not configured.");
+            return;
+        }
+
+        window.location.href = GITHUB_AUTH_URL;
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -70,6 +149,8 @@ const RegisterModal = ({
                 return;
             }
 
+            setUser(result?.data?.user || null);
+            setGreeting(`Hi ${result?.data?.user?.name || "there"}, welcome to Blogify!`);
             setSuccess("Account created successfully!");
             setName("");
             setEmail("");
