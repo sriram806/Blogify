@@ -4,7 +4,8 @@ import User from "../model/user.model.js";
 import { createSendToken } from "../middleware/token.js";
 import getBuffer from "../utils/buffer.service.js";
 import { v2 as cloudinary } from "cloudinary";
-
+import { oauth2Client } from "../utils/GoogleConfig.js";
+import axios from "axios";
 
 // register a new user
 export const Registration = async (req: Request, res: Response): Promise<Response> => {
@@ -35,25 +36,88 @@ export const Registration = async (req: Request, res: Response): Promise<Respons
     }
 };
 
-// login user
-export const Login = async (req: Request, res: Response): Promise<any> => {
-    const { email, password } = req.body;
-    try {
-        if (!email || !password) return res.status(400).json({ success: false, message: "Please provide email and password" });
-        const user = await User.findOne({ email }).select("+password");
-        if (!user) return res.status(404).json({ success: false, message: "User not found" });
-        if (!(await bcrypt.compare(password, user.password))) return res.status(401).json({ success: false, message: "Invalid password" });
+export const Login = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const { code, email, password } = req.body as {
+      code?: string;
+      email?: string;
+      password?: string;
+    };
 
-        const userObject = {
-            ...user.toObject(),
-            _id: user._id.toString(),
-        }
+    /* =========================
+       EMAIL + PASSWORD LOGIN
+    ========================= */
+    if (email && password) {
+      const user = await User.findOne({ email }).select("+password");
 
-        return createSendToken(userObject, 200, res, "Login successful");
-    } catch (error: any) {
-        return res.status(500).json({ success: false, message: `Internal Server Error in Login: ${error.message}` });
+      if (!user || !user.password) {
+        return res.status(401).json({
+          success: false,
+          message: "Account with this email does not exist",
+        });
+      }
+
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+
+      if (!isPasswordValid) {
+        return res.status(401).json({
+          success: false,
+          message: "You have entered an incorrect password",
+        });
+      }
+
+      const userObject = {
+        ...user.toObject(),
+        _id: user._id.toString(),
+      };
+
+      return createSendToken(userObject, 200, res, "Login successful");
     }
-}
+
+    /* =========================
+       GOOGLE LOGIN
+    ========================= */
+    if (!code) {
+      return res.status(400).json({
+        success: false,
+        message: "Authorization code or email/password is required",
+      });
+    }
+
+    const { tokens } = await oauth2Client.getToken(code);
+    oauth2Client.setCredentials(tokens);
+
+    const userInfo = await axios.get(
+      `https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=${tokens.access_token}`
+    );
+
+    const { email: googleEmail, name, picture } = userInfo.data;
+
+    let user = await User.findOne({ email: googleEmail });
+
+    if (!user) {
+      user = await User.create({
+        name,
+        email: googleEmail,
+        image: picture,
+        provider: "google",
+      });
+    }
+
+    const userObject = {
+      ...user.toObject(),
+      _id: user._id.toString(),
+    };
+
+    return createSendToken(userObject, 200, res, "Google login successful");
+  } catch (error: any) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: `Internal Server Error: ${error.message}`,
+    });
+  }
+};
 
 // logout user
 export const Logout = async (req: Request, res: Response): Promise<Response> => {
