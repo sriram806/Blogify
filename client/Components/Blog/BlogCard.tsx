@@ -52,14 +52,14 @@ const BlogCard = ({
         </div>
 
         {/* Content */}
-        <div className="p-4 flex flex-col flex-grow">
+        <div className="p-4 flex flex-col grow">
           {/* Title */}
           <h3 className="text-lg font-bold text-black group-hover:text-gray-700 transition line-clamp-2 mb-2">
             {title}
           </h3>
 
           {/* Excerpt */}
-          <p className="text-sm text-gray-600 line-clamp-2 mb-3 flex-grow">
+          <p className="text-sm text-gray-600 line-clamp-2 mb-3 grow">
             {excerpt}
           </p>
 

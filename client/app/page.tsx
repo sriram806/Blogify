@@ -4,6 +4,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { FaArrowRight } from "react-icons/fa";
 import BlogSection from "@/Components/Blog/BlogSection";
+import FeaturedPage from "@/Components/Home/FeaturedPage";
+import TrendingPage from "@/Components/Home/TrendingPage";
+import RecommandPage from "@/Components/Home/RecommandPage";
+import NewsletterSection from "@/Components/Home/NewsLetter";
 
 // Mock data - replace with actual data from API
 const sampleBlogs = [
@@ -125,22 +129,24 @@ export default function HomePage() {
   return (
     <>
       {/* Hero Section */}
-      <section className="relative overflow-hidden md:mx-4 lg:mx-8 rounded-3xl shadow-lg">
+      <section className="relative overflow-hidden mx-3 sm:mx-4 md:mx-6 lg:mx-8 rounded-2xl sm:rounded-3xl shadow">
+
         {/* Background */}
         <div className="absolute inset-0 bg-linear-to-br from-white via-gray-50 to-gray-100" />
 
-        <div className="relative container mx-auto px-4 py-10">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
+        <div className="relative container mx-auto px-5 sm:px-6 md:px-8 py-10 sm:py-12 md:py-16">
+          <div className="grid md:grid-cols-2 gap-10 md:gap-12 items-center">
 
             {/* LEFT CONTENT */}
             <div>
+
               {/* Badge */}
-              <div className="inline-flex items-center gap-2 bg-black/5 px-4 py-2 rounded-full text-sm font-medium mb-6">
+              <div className="inline-flex items-center gap-2 bg-black/5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium mb-5 sm:mb-6">
                 ✨ New articles every week
               </div>
 
               {/* Heading */}
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight tracking-tight">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight tracking-tight">
                 Insights, stories, and ideas to
                 <span className="block text-gray-500">
                   help you grow every day
@@ -148,16 +154,16 @@ export default function HomePage() {
               </h1>
 
               {/* Description */}
-              <p className="mt-6 text-lg text-gray-600 max-w-xl">
+              <p className="mt-5 sm:mt-6 text-sm sm:text-base md:text-lg text-gray-600 max-w-xl">
                 Discover curated articles on technology, design, productivity,
                 and personal growth. Learn from real experiences and practical insights.
               </p>
 
               {/* CTA */}
-              <div className="mt-8 flex flex-col sm:flex-row gap-4">
+              <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <Link
                   href="/blog"
-                  className="inline-flex items-center justify-center gap-2 bg-black text-white px-6 py-3 rounded-full font-medium hover:bg-gray-800 transition"
+                  className="inline-flex items-center justify-center gap-2 bg-black text-white px-5 sm:px-6 py-2.5 sm:py-3 rounded-full text-sm sm:text-base font-medium hover:bg-gray-800 transition"
                 >
                   Explore Blogs
                   <FaArrowRight />
@@ -165,24 +171,24 @@ export default function HomePage() {
 
                 <Link
                   href="/about"
-                  className="inline-flex items-center justify-center px-6 py-3 rounded-full border border-gray-300 font-medium hover:bg-gray-100 transition"
+                  className="inline-flex items-center justify-center px-5 sm:px-6 py-2.5 sm:py-3 rounded-full border border-gray-300 text-sm sm:text-base font-medium hover:bg-gray-100 transition"
                 >
                   Learn More
                 </Link>
               </div>
 
               {/* Stats */}
-              <div className="mt-10 flex gap-8 text-sm text-gray-600">
+              <div className="mt-8 sm:mt-10 flex flex-wrap gap-6 sm:gap-8 text-xs sm:text-sm text-gray-600">
                 <div>
-                  <p className="text-2xl font-semibold text-black">500+</p>
+                  <p className="text-xl sm:text-2xl font-semibold text-black">500+</p>
                   Articles
                 </div>
                 <div>
-                  <p className="text-2xl font-semibold text-black">120k</p>
+                  <p className="text-xl sm:text-2xl font-semibold text-black">120k</p>
                   Readers
                 </div>
                 <div>
-                  <p className="text-2xl font-semibold text-black">50+</p>
+                  <p className="text-xl sm:text-2xl font-semibold text-black">50+</p>
                   Writers
                 </div>
               </div>
@@ -190,9 +196,11 @@ export default function HomePage() {
 
             {/* RIGHT IMAGE */}
             <div className="relative">
-              <div className="relative w-full -bottom-17 -right-5  h-70 md:h-98 lg:h-115 overflow-hidden">
+
+              {/* Hero Image */}
+              <div className="relative w-full h-65 sm:h-80 md:h-95 lg:h-115 rounded-xl sm:rounded-2xl mt-24 overflow-hidden">
                 <Image
-                  src="/images/hero-blog.webp"
+                  src="/images/hero-blog.png"
                   alt="Blog Hero"
                   fill
                   className="object-cover"
@@ -200,75 +208,47 @@ export default function HomePage() {
                 />
               </div>
 
-              {/* Floating Card (optional highlight) */}
-              <div className="absolute -top-16 -left-2 bg-white shadow-lg rounded-xl p-4 hidden md:block cursor-pointer hover:shadow-2xl transition">
-                <p className="text-sm text-gray-500">Featured Post</p>
-                <p className="font-semibold">How AI is changing web development</p>
+              {/* Floating Card 1 */}
+              <div className="
+  absolute top-3 sm:top-4 md:top-5 left-3 sm:left-4 md:left-5
+  bg-white shadow-lg rounded-lg sm:rounded-xl
+  p-2.5 sm:p-3 md:p-4
+  max-w-32 sm:max-w-42.5 md:max-w-50
+  cursor-pointer hover:shadow-2xl transition
+">
+                <p className="text-[9px] sm:text-[10px] md:text-xs text-gray-500">
+                  Featured Post
+                </p>
+                <p className="text-[11px] sm:text-xs md:text-sm font-semibold leading-snug">
+                  How AI is changing web development
+                </p>
               </div>
-              <div className="absolute top-8 left-16 bg-white shadow-lg rounded-xl p-4 hidden md:block cursor-pointer hover:shadow-2xl transition">
-                <p className="text-sm text-gray-500">Featured Post</p>
-                <p className="font-semibold">How AI is changing web development</p>
+
+              {/* Floating Card 2 */}
+              <div className="
+  absolute bottom-3 sm:bottom-4 md:bottom-5 right-3 sm:right-4 md:right-5
+  bg-white shadow-lg rounded-lg sm:rounded-xl
+  p-2.5 sm:p-3 md:p-4
+  max-w-32 sm:max-w-42.5 md:max-w-50
+  cursor-pointer hover:shadow-2xl transition
+">
+                <p className="text-[9px] sm:text-[10px] md:text-xs text-gray-500">
+                  Trending
+                </p>
+                <p className="text-[11px] sm:text-xs md:text-sm font-semibold leading-snug">
+                  Top UI trends in 2026
+                </p>
               </div>
+
             </div>
           </div>
         </div>
       </section>
 
-      {/* Latest Blogs Section */}
-      <BlogSection
-        title="Latest Articles"
-        description="Fresh insights and stories published just for you"
-        badge="LATEST"
-        blogs={sampleBlogs.slice(0, 4)}
-        viewAllLink="/blog?sort=latest"
-      />
-
-      {/* Popular Blogs Section */}
-      <BlogSection
-        title="Popular Now"
-        description="What the community is reading and loving"
-        badge="TRENDING UP"
-        blogs={sampleBlogs.slice(1, 5)}
-        viewAllLink="/blog?sort=popular"
-      />
-
-      {/* Recommended Blogs Section */}
-      <BlogSection
-        title="Recommended For You"
-        description="Personalized picks based on your interests"
-        badge="RECOMMENDED"
-        blogs={sampleBlogs.slice(2, 6)}
-        viewAllLink="/blog?sort=recommended"
-      />
-
-      {/* Trending Blogs Section */}
-      <BlogSection
-        title="Trending This Week"
-        description="The most talked about articles in the community"
-        badge="HOT"
-        blogs={sampleBlogs.slice(3, 7)}
-        viewAllLink="/blog?sort=trending"
-      />
-
-      {/* Newsletter Section */}
-      <section className="container mx-auto px-4 py-16 md:py-24">
-        <div className="p-8 md:p-16 rounded-3xl bg-gradient-to-r from-black to-gray-800 text-white text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Never Miss an Article</h2>
-          <p className="text-gray-300 mb-6 max-w-2xl mx-auto">
-            Subscribe to our newsletter to get the best articles delivered to your inbox weekly.
-          </p>
-          <div className="flex flex-col md:flex-row gap-3 max-w-md mx-auto">
-            <input
-              type="email"
-              placeholder="Enter your email"
-              className="flex-1 px-4 py-3 rounded-lg text-black outline-none focus:ring-2 focus:ring-white"
-            />
-            <button className="px-6 py-3 bg-white text-black font-medium rounded-lg hover:bg-gray-200 transition">
-              Subscribe
-            </button>
-          </div>
-        </div>
-      </section>
+      <FeaturedPage />
+      <TrendingPage />
+      <RecommandPage />
+      <NewsletterSection />
     </>
   );
 }

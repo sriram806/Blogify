@@ -27,34 +27,34 @@ type BlogSectionProps = {
   badge?: string;
 };
 
-const BlogSection = ({
+export default function BlogSection({
   title,
   description,
   blogs,
   viewAllLink,
   badge,
-}: BlogSectionProps) => {
+}: BlogSectionProps) {
   return (
-    <section className="relative py-14 md:py-20 m-4">
-      {/* Subtle background panel */}
-      <div className="absolute inset-0 bg-gray-50/70" />
+    <section className="relative">
 
-      <div className="relative container mx-auto px-4">
+      {/* Elevated container */}
+      <div className="bg-white/80 backdrop-blur-xl border border-gray-200 rounded-3xl p-6 md:p-10 shadow-xl">
+
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-10">
-          
-          <div>
-            <div className="flex items-center gap-3 mb-3">
-              {badge && (
-                <span className="px-3 py-1 bg-black text-white text-xs font-semibold rounded-full tracking-wide">
-                  {badge}
-                </span>
-              )}
-            </div>
 
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-black">
-              {title}
-            </h2>
+          <div>
+            {badge && (
+              <span className="inline-flex items-center px-4 py-1.5 rounded-full bg-black text-white text-xs font-semibold tracking-wide mb-4 shadow-sm">
+                {badge}
+              </span>
+            )}
+
+            {title && (
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-gray-900">
+                {title}
+              </h2>
+            )}
 
             {description && (
               <p className="mt-3 text-gray-600 max-w-2xl leading-relaxed">
@@ -66,22 +66,27 @@ const BlogSection = ({
           {/* Desktop View All */}
           <Link
             href={viewAllLink}
-            className="hidden md:inline-flex items-center gap-2 px-5 py-2.5 border border-gray-300 rounded-full font-medium hover:bg-black hover:text-white hover:border-black transition-all"
+            className="hidden md:inline-flex items-center gap-2 px-5 py-2.5 bg-black text-white rounded-full font-medium hover:bg-gray-800 transition"
           >
             View All
             <FaArrowRight className="text-sm" />
           </Link>
         </div>
 
-        {/* Blog Grid */}
+        {/* Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {blogs.map((blog) => (
-            <BlogCard key={blog.id} {...blog} />
+            <div
+              key={blog.id}
+              className="transition-transform duration-300 hover:-translate-y-1"
+            >
+              <BlogCard {...blog} />
+            </div>
           ))}
         </div>
 
         {/* Mobile View All */}
-        <div className="mt-8 md:hidden">
+        <div className="mt-10 md:hidden">
           <Link
             href={viewAllLink}
             className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-black text-white font-medium rounded-full hover:bg-gray-800 transition"
@@ -93,6 +98,4 @@ const BlogSection = ({
       </div>
     </section>
   );
-};
-
-export default BlogSection;
+}
