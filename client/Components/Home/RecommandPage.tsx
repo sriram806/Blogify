@@ -10,7 +10,7 @@ const recommendations = [
     excerpt:
       "Discover serene beaches, hidden coves, and the best coastal destinations for a peaceful getaway.",
     category: "Travel",
-    image: "https://plus.unsplash.com/premium_photo-1677494866983-08f0c08a4237?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTQ3fHxUcmF2ZWx8ZW58MHx8MHx8fDA%3D",
+    image: "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8VHJhdmVsfGVufDB8fDB8fHww",
   },
   {
     id: "life-by-the-ocean",

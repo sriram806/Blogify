@@ -129,12 +129,12 @@ export default function HomePage() {
   return (
     <>
       {/* Hero Section */}
-      <section className="relative overflow-hidden mx-3 sm:mx-4 md:mx-6 lg:mx-8 rounded-2xl sm:rounded-3xl shadow">
+      <section className="relative overflow-hidden drop-shadow-sm">
 
         {/* Background */}
         <div className="absolute inset-0 bg-linear-to-br from-white via-gray-50 to-gray-100" />
 
-        <div className="relative container mx-auto px-5 sm:px-6 md:px-8 py-10 sm:py-12 md:py-16">
+        <div className="relative container mx-auto px-5 sm:px-6 md:px-8 py-5 sm:py-12 md:py-16">
           <div className="grid md:grid-cols-2 gap-10 md:gap-12 items-center">
 
             {/* LEFT CONTENT */}
@@ -198,7 +198,7 @@ export default function HomePage() {
             <div className="relative">
 
               {/* Hero Image */}
-              <div className="relative w-full h-65 sm:h-80 md:h-95 lg:h-115 rounded-xl sm:rounded-2xl mt-24 overflow-hidden">
+              <div className="relative w-full h-65 sm:h-80 md:h-95 lg:h-115 rounded-xl sm:rounded-2xl mt-28 overflow-hidden">
                 <Image
                   src="/images/hero-blog.png"
                   alt="Blog Hero"
