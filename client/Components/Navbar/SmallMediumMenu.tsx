@@ -138,7 +138,7 @@ const SmallMediumMenu = ({
                 </div>
               </div>
             </Link>
-            <div className="mt-4 flex flex-col gap-3">
+            <div className="mt-4 flex py-6 flex-col gap-3">
               {!user ? (
                 <>
                   <button
