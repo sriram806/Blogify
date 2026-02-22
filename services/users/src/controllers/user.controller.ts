@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import User from "../model/user.model.js";
-import { createSendToken } from "../middleware/token.js";
+import { createSendToken, getAuthCookieOptions } from "../middleware/token.js";
 import getBuffer from "../utils/buffer.service.js";
 import { v2 as cloudinary } from "cloudinary";
 import { oauth2Client } from "../utils/GoogleConfig.js";
@@ -176,7 +176,12 @@ export const Login = async (req: Request, res: Response): Promise<Response> => {
 // logout user
 export const Logout = async (req: Request, res: Response): Promise<Response> => {
   try {
-    res.cookie("token", null, { expires: new Date(Date.now()), httpOnly: true });
+    const cookieOptions = getAuthCookieOptions();
+    res.cookie("token", "", {
+      ...cookieOptions,
+      maxAge: 0,
+      expires: new Date(0),
+    });
     return res.status(200).json({ success: true, message: "Logged out successfully" });
   } catch (error: any) {
     return res.status(500).json({ success: false, message: `Internal Server Error in Logout: ${error.message}` });

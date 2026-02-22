@@ -1,5 +1,6 @@
 import jwt, { SignOptions } from "jsonwebtoken";
 import { Response } from "express";
+import type { CookieOptions } from "express";
 import { JWT_EXPIRES_IN, JWT_SECRET, NODE_ENV } from "../utils/env.js";
 
 export const parseExpiryToMs = (expiresIn?: string): number => {
@@ -30,6 +31,38 @@ export const signToken = (id: string): string => {
     return jwt.sign({ id }, JWT_SECRET as string, options);
 };
 
+export const getAuthCookieOptions = (): CookieOptions => {
+    const nodeEnv = String(NODE_ENV || process.env.NODE_ENV || "").toLowerCase().trim();
+    const isProd = nodeEnv === "production";
+
+    let cookieDomain: string | undefined = process.env.COOKIE_DOMAIN || undefined;
+
+    if (cookieDomain) {
+        cookieDomain = cookieDomain.replace(/^https?:\/\//, "").split("/")[0].split(":")[0];
+
+        if (!cookieDomain.startsWith(".")) {
+            cookieDomain = `.${cookieDomain}`;
+        }
+
+        cookieDomain = cookieDomain.replace(/^\.+/, ".");
+    }
+
+    if (!cookieDomain || cookieDomain === "." || cookieDomain === ".localhost") {
+        cookieDomain = undefined;
+    }
+
+    const sameSite: "lax" | "none" = isProd ? "none" : "lax";
+
+    return {
+        httpOnly: true,
+        secure: isProd || sameSite === "none",
+        sameSite,
+        maxAge: parseExpiryToMs(JWT_EXPIRES_IN),
+        path: "/",
+        ...(cookieDomain ? { domain: cookieDomain } : {}),
+    };
+};
+
 interface UserDocument {
     _id: string;
     name: string;
@@ -48,35 +81,7 @@ interface UserDocument {
 export const createSendToken = (user: UserDocument, statusCode: number, res: Response, message: string) => {
     const token = signToken(user._id);
 
-    const nodeEnv = String(NODE_ENV || process.env.NODE_ENV || "").toLowerCase().trim();
-    const isProd = nodeEnv === "production";
-
-    let cookieDomain: string | undefined =process.env.COOKIE_DOMAIN || undefined;
-
-    if (cookieDomain) {
-        cookieDomain = cookieDomain.replace(/^https?:\/\//, "").split("/")[0].split(":")[0];
-
-        if (!cookieDomain.startsWith(".")) {
-            cookieDomain = `.${cookieDomain}`;
-        }
-
-        cookieDomain = cookieDomain.replace(/^\.+/, ".");
-    }
-
-    if (
-        !cookieDomain ||cookieDomain === "." ||cookieDomain === ".localhost"
-    ) {
-        cookieDomain = undefined;
-    }
-
-    const cookieOptions = {
-        httpOnly: true,
-        secure: isProd,
-        sameSite: "lax" as const,
-        maxAge: parseExpiryToMs(JWT_EXPIRES_IN),
-        path: "/",
-        ...(cookieDomain ? { domain: cookieDomain } : {}),
-    };
+    const cookieOptions = getAuthCookieOptions();
 
     try {
         res.cookie("token", token, cookieOptions);
@@ -91,8 +96,8 @@ export const createSendToken = (user: UserDocument, statusCode: number, res: Res
         try {
             res.cookie("token", token, {
                 httpOnly: true,
-                secure: isProd,
-                sameSite: "lax",
+                secure: cookieOptions.secure,
+                sameSite: cookieOptions.sameSite,
                 maxAge: cookieOptions.maxAge,
                 path: "/",
             });

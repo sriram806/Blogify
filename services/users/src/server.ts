@@ -1,4 +1,4 @@
-import express, { Request, Response } from "express";
+import express, { NextFunction, Request, Response } from "express";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import connectDB from "./utils/database.js";
@@ -16,6 +16,19 @@ const allowedOrigins = [
     process.env.CLIENT_ORIGIN
 ].filter((origin): origin is string => Boolean(origin));
 
+const allowedOriginSet = new Set(allowedOrigins);
+
+const applyCorsHeaders = (req: Request, res: Response): void => {
+    const requestOrigin = req.headers.origin;
+    if (requestOrigin && allowedOriginSet.has(requestOrigin)) {
+        res.header("Access-Control-Allow-Origin", requestOrigin);
+        res.header("Access-Control-Allow-Credentials", "true");
+        res.header("Vary", "Origin");
+        res.header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
+        res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    }
+};
+
 const corsOptions: CorsOptions = {
     origin: (origin, callback) => {
         if (!origin || allowedOrigins.includes(origin)) {
@@ -32,6 +45,16 @@ const corsOptions: CorsOptions = {
 };
 
 app.use(cors(corsOptions));
+
+app.use((req: Request, res: Response, next: NextFunction) => {
+    applyCorsHeaders(req, res);
+    if (req.method === "OPTIONS") {
+        res.sendStatus(204);
+        return;
+    }
+    next();
+});
+
 const PORT = process.env.PORT || 5000;
 
 const appVersion = "v1";
@@ -51,6 +74,30 @@ app.get("/", (req: Request, res: Response) => {
 });
 
 app.use(`/api/${appVersion}/users`, UserRouter);
+
+app.use((req: Request, res: Response) => {
+    applyCorsHeaders(req, res);
+    res.status(404).json({
+        success: false,
+        message: "Route not found",
+    });
+});
+
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+    applyCorsHeaders(req, res);
+
+    if (res.headersSent) {
+        next(err);
+        return;
+    }
+
+    console.error("Unhandled server error:", err);
+
+    res.status(err?.status || 500).json({
+        success: false,
+        message: err?.message || "Internal server error",
+    });
+});
 
 const startServer = async () => {
     try {
