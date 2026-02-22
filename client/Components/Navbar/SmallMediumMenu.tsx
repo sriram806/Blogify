@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { IoClose } from "react-icons/io5";
 import { FaUserCircle } from "react-icons/fa";
 
@@ -18,6 +19,7 @@ type NavItem = {
 type AuthUser = {
   name?: string;
   email?: string;
+  image?: string;
 };
 
 type SmallMediumMenuProps = {
@@ -113,13 +115,29 @@ const SmallMediumMenu = ({
           </nav>
 
           <div className="px-6 py-15 pb-8">
-            <div className="flex items-center gap-3 bg-gray-100 p-3 rounded">
-              <FaUserCircle className="text-3xl text-gray-600" />
-              <div>
-                <p className="font-semibold">{user?.name || "Guest User"}</p>
-                <p className="text-sm text-gray-500">{user?.email || "View Profile"}</p>
+            <Link href="/users/profile" onClick={onClose} className="flex items-center gap-3 mb-6">
+              <div className="flex items-center gap-3 bg-gray-100 p-3 rounded">
+                <div className="relative w-10 h-10">
+                  {user?.image ? (
+                    <Image
+                      src={user.image}
+                      alt={user.name || "User"}
+                      fill
+                      className="rounded-full object-cover"
+                    />
+                  ) : (
+                    <FaUserCircle className="text-3xl text-gray-600" />
+                  )}
+                </div>
+
+                <div>
+                  <p className="font-semibold">{user?.name || "Guest User"}</p>
+                  <p className="text-sm text-gray-500">
+                    {user?.email || "View Profile"}
+                  </p>
+                </div>
               </div>
-            </div>
+            </Link>
             <div className="mt-4 flex flex-col gap-3">
               {!user ? (
                 <>

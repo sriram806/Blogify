@@ -23,11 +23,7 @@ type LoginModalProps = {
 const { apiBase: API_BASE, githubAuthUrl: GITHUB_AUTH_URL, googleClientId: GOOGLE_CLIENT_ID } =
     AUTH_CONFIG;
 
-const LoginModal = ({
-    isOpen,
-    onClose,
-    onSwitchToRegister,
-}: LoginModalProps) => {
+const LoginModal = ({ isOpen, onClose, onSwitchToRegister, }: LoginModalProps) => {
     const { setUser, setGreeting } = useAuth();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -38,7 +34,10 @@ const LoginModal = ({
     const [googleReady, setGoogleReady] = useState(false);
 
     useEffect(() => {
-        if (!GOOGLE_CLIENT_ID) return;
+        if (!GOOGLE_CLIENT_ID) {
+            setGoogleReady(false);
+            return;
+        };
         if (window.google) {
             setGoogleReady(true);
             return;
@@ -207,7 +206,7 @@ const LoginModal = ({
                                 onClick={() => handleSocialAuth("google")}
                                 className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-lg border border-gray-300 hover:bg-gray-50 transition font-medium"
                             >
-                                <FcGoogle  size={20}/>
+                                <FcGoogle size={20} />
                                 Continue with Google
                             </button>
 

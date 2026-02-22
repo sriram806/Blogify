@@ -205,7 +205,7 @@ const Header = () => {
                       {user && (
                         <div className="p-4 space-y-2">
                           <Link
-                            href="/profile"
+                            href="/users/profile"
                             className="block rounded-full border border-gray-200 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                           >
                             View profile
