@@ -73,6 +73,18 @@ app.get("/", (req: Request, res: Response) => {
     res.send("User Service is up and running on port number "+ PORT + "!");
 });
 
+app.get("/_health", (req: Request, res: Response) => {
+    applyCorsHeaders(req, res);
+    const nodeEnv = String(process.env.NODE_ENV || "").toLowerCase().trim();
+    res.json({
+        status: "ok",
+        timestamp: new Date().toISOString(),
+        env: nodeEnv || "development",
+        allowedOrigins: allowedOrigins,
+        clientOrigin: process.env.CLIENT_ORIGIN || "not set",
+    });
+});
+
 app.use(`/api/${appVersion}/users`, UserRouter);
 
 app.use((req: Request, res: Response) => {
