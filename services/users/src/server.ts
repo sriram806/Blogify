@@ -29,7 +29,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-connectDB();
 cloudinary.config({
     cloud_name: process.env.Cloud_Name,
     api_key: process.env.API,
@@ -42,6 +41,17 @@ app.get("/", (req: Request, res: Response) => {
 
 app.use(`/api/${appVersion}/users`, UserRouter);
 
-app.listen(PORT, () => {
-    console.log(`User service is running on port -> http://localhost:${PORT}`);
-});
+const startServer = async () => {
+    try {
+        await connectDB();
+
+        app.listen(PORT, () => {
+            console.log(`User service is running on port -> http://localhost:${PORT}`);
+        });
+    } catch (error) {
+        console.error("Failed to start user service:", error);
+        process.exit(1);
+    }
+};
+
+startServer();
