@@ -9,7 +9,7 @@ import cors from "cors";
 dotenv.config();
 
 const app = express();
-const clientOrigin = process.env.CLIENT_ORIGIN || "http://localhost:3000";
+const clientOrigin = process.env.CLIENT_ORIGIN || "http://localhost:3000" || "https://blogify-three-phi.vercel.app";
 app.use(
     cors({
         origin: clientOrigin,
