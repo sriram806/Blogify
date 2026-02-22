@@ -114,7 +114,7 @@ const SmallMediumMenu = ({
             </div>
           </nav>
 
-          <div className="px-6 py-15 pb-8">
+          <div className="px-6 py-6 pb-8">
             <Link href="/users/profile" onClick={onClose} className="flex items-center gap-3 mb-6">
               <div className="flex items-center gap-3 bg-gray-100 p-3 rounded">
                 <div className="relative w-10 h-10">

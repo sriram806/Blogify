@@ -53,6 +53,15 @@ const Header = () => {
     };
   }, [menuOpen]);
 
+  const clearClientData = () => {
+    localStorage.clear();
+    sessionStorage.clear();
+    document.cookie.split(";").forEach((cookie) => {
+      const name = cookie.split("=")[0].trim();
+      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+    });
+  };
+
   const handleLogout = async () => {
     try {
       await fetch(
@@ -62,13 +71,15 @@ const Header = () => {
           credentials: "include",
         }
       );
-    } catch {
+    } catch (error) {
+      console.error("Logout error:", error);
     } finally {
+      clearClientData();
       setUser(null);
       setProfileOpen(false);
+      window.location.reload();
     }
   };
-
 
   return (
     <>
@@ -206,13 +217,17 @@ const Header = () => {
                         <div className="p-4 space-y-2">
                           <Link
                             href="/users/profile"
+                            onClick={() => setProfileOpen(false)}
                             className="block rounded-full border border-gray-200 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                           >
                             View profile
                           </Link>
                           <button
                             type="button"
-                            onClick={handleLogout}
+                            onClick={() => {
+                              handleLogout();
+                              setProfileOpen(false);
+                            }}
                             className="w-full rounded-full bg-gray-900 px-4 py-2 text-sm font-medium text-white"
                           >
                             Logout
