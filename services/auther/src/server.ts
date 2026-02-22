@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
+import cors from 'cors';
 import { initDB } from './utils/DataBase';
 import BlogRouter from './routes/blog.routes';
 import { v2 as cloudinary } from 'cloudinary';
@@ -9,6 +10,18 @@ import { connectRabbitMQ } from './utils/rabbitmq.js';
 dotenv.config();
 
 const app = express();
+const allowedOrigins = [
+    'http://localhost:3000',
+    'https://blogify-three-phi.vercel.app',
+    process.env.CLIENT_ORIGIN
+].filter((origin): origin is string => Boolean(origin));
+
+app.use(
+    cors({
+        origin: allowedOrigins,
+        credentials: true,
+    })
+);
 
 connectRabbitMQ();
 

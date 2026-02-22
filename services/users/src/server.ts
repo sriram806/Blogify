@@ -9,10 +9,15 @@ import cors from "cors";
 dotenv.config();
 
 const app = express();
-const clientOrigin = process.env.CLIENT_ORIGIN || "http://localhost:3000" || "https://blogify-three-phi.vercel.app";
+const allowedOrigins = [
+    "http://localhost:3000",
+    "https://blogify-three-phi.vercel.app",
+    process.env.CLIENT_ORIGIN
+].filter((origin): origin is string => Boolean(origin));
+
 app.use(
     cors({
-        origin: clientOrigin,
+        origin: allowedOrigins,
         credentials: true,
     })
 );
