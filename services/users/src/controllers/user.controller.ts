@@ -12,16 +12,30 @@ export const Registration = async (req: Request, res: Response): Promise<Respons
   try {
     const { code, name, email, password, role } = req.body;
 
-    if (email && password && name && role) {
-      if (!name || !email || !password) return res.status(400).json({ success: false, message: "Please provide all required fields" });
-      if (await User.findOne({ email })) return res.status(409).json({ success: false, message: "User already exists with this email" });
+    // 🔹 LOCAL REGISTRATION
+    if (name || email || password) {
+      if (!name || !email || !password) {
+        return res.status(400).json({
+          success: false,
+          message: "Please provide name, email, and password",
+        });
+      }
+
+      const existingUser = await User.findOne({ email });
+      if (existingUser) {
+        return res.status(409).json({
+          success: false,
+          message: "User already exists with this email",
+        });
+      }
+
       const hashedPassword = await bcrypt.hash(password, 10);
 
       const createdUser = await User.create({
         name,
         email,
         password: hashedPassword,
-        role,
+        role: role || "user",
         provider: "local",
       });
 
@@ -33,10 +47,11 @@ export const Registration = async (req: Request, res: Response): Promise<Respons
       return createSendToken(userObject, 201, res, "User registered successfully");
     }
 
+    // 🔹 GOOGLE REGISTRATION
     if (!code) {
       return res.status(400).json({
         success: false,
-        message: "Please provide either email/password/name/role or authorization code",
+        message: "Authorization code is required for Google registration",
       });
     }
 
@@ -52,7 +67,10 @@ export const Registration = async (req: Request, res: Response): Promise<Respons
     let user = await User.findOne({ email: googleEmail });
 
     if (user) {
-      return res.status(409).json({ success: false, message: "User already exists with this email" });
+      return res.status(409).json({
+        success: false,
+        message: "User already exists with this email",
+      });
     }
 
     user = await User.create({
@@ -71,7 +89,10 @@ export const Registration = async (req: Request, res: Response): Promise<Respons
     return createSendToken(userObject, 201, res, "User registered with Google successfully");
   } catch (error: any) {
     console.error("Registration Error:", error);
-    return res.status(500).json({ success: false, message: `Internal Server Error in Registration: ${error.message}` });
+    return res.status(500).json({
+      success: false,
+      message: `Internal Server Error in Registration: ${error.message}`,
+    });
   }
 };
 
