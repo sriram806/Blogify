@@ -5,6 +5,7 @@ import connectDB from "./utils/database.js";
 import UserRouter from "./routes/user.routes.js";
 import { v2 as cloudinary } from "cloudinary";
 import cors from "cors";
+import type { CorsOptions } from "cors";
 
 dotenv.config();
 
@@ -15,12 +16,23 @@ const allowedOrigins = [
     process.env.CLIENT_ORIGIN
 ].filter((origin): origin is string => Boolean(origin));
 
-app.use(
-    cors({
-        origin: allowedOrigins,
-        credentials: true,
-    })
-);
+const corsOptions: CorsOptions = {
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+            return;
+        }
+
+        callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    optionsSuccessStatus: 204,
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 const PORT = process.env.PORT || 5000;
 
 const appVersion = "v1";
