@@ -36,7 +36,7 @@ export const Registration = async (req: Request, res: Response): Promise<Respons
     if (!code) {
       return res.status(400).json({
         success: false,
-        message: "Authorization code is required",
+        message: "Please provide either email/password/name/role or authorization code",
       });
     }
 
