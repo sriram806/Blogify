@@ -1,10 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import BlogFilters from "@/Components/Blog/BlogFilters";
 import BlogRowCard from "@/Components/Blog/BlogRowCard";
-import { ALL_BLOGS } from "@/Components/Blog/blog.data";
 import { BlogDateRange, BlogFilterState, BlogItem, BlogSortBy } from "@/Components/Blog/blog.types";
+import { fetchAllBlogs } from "@/Components/Blog/blog.api";
 
 const getDateRangeDays = (range: BlogDateRange): number | null => {
   switch (range) {
@@ -47,13 +47,11 @@ const sortBlogs = (blogs: BlogItem[], sortBy: BlogSortBy) => {
   }
 };
 
-const maxReadTime = Math.max(...ALL_BLOGS.map((blog) => blog.readMinutes));
-
 const INITIAL_FILTERS: BlogFilterState = {
   search: "",
   category: "all",
   author: "all",
-  maxReadMinutes: maxReadTime,
+  maxReadMinutes: 60,
   minLikes: 0,
   dateRange: "all",
   sortBy: "latest",
@@ -62,24 +60,55 @@ const INITIAL_FILTERS: BlogFilterState = {
 const PAGE_SIZE = 15;
 
 const BlogsPage = () => {
+  const [blogs, setBlogs] = useState<BlogItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
   const [filters, setFilters] = useState<BlogFilterState>(INITIAL_FILTERS);
   const [currentPage, setCurrentPage] = useState(1);
 
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      setErrorMessage("");
+
+      const response = await fetchAllBlogs();
+      if (!response.ok) {
+        setErrorMessage(response.message || "Unable to load blogs right now.");
+        setBlogs([]);
+        setLoading(false);
+        return;
+      }
+
+      const loadedBlogs = response.blogs;
+      const maxReadTime = Math.max(1, ...loadedBlogs.map((blog) => blog.readMinutes));
+      setBlogs(loadedBlogs);
+      setFilters((prev) => ({ ...prev, maxReadMinutes: maxReadTime }));
+      setLoading(false);
+    };
+
+    load();
+  }, []);
+
+  const maxReadTime = useMemo(
+    () => Math.max(1, ...blogs.map((blog) => blog.readMinutes)),
+    [blogs]
+  );
+
   const categories = useMemo(
-    () => Array.from(new Set(ALL_BLOGS.map((blog) => blog.category))).sort(),
-    []
+    () => Array.from(new Set(blogs.map((blog) => blog.category))).sort(),
+    [blogs]
   );
 
   const authors = useMemo(
-    () => Array.from(new Set(ALL_BLOGS.map((blog) => blog.author))).sort(),
-    []
+    () => Array.from(new Set(blogs.map((blog) => blog.author))).sort(),
+    [blogs]
   );
 
   const filteredBlogs = useMemo(() => {
     const now = new Date();
     const rangeDays = getDateRangeDays(filters.dateRange);
 
-    const filtered = ALL_BLOGS.filter((blog) => {
+    const filtered = blogs.filter((blog) => {
       const normalizedSearch = filters.search.trim().toLowerCase();
       const matchesSearch =
         normalizedSearch.length === 0 ||
@@ -107,7 +136,7 @@ const BlogsPage = () => {
     });
 
     return sortBlogs(filtered, filters.sortBy);
-  }, [filters]);
+  }, [filters, blogs]);
 
   const handleFilterChange = <K extends keyof BlogFilterState>(
     key: K,
@@ -144,6 +173,18 @@ const BlogsPage = () => {
           </aside>
 
           <div className="lg:w-[76%]">
+            {loading && (
+              <div className="mb-4 rounded-2xl border border-gray-200 bg-white p-4 text-sm text-gray-600">
+                Loading blogs...
+              </div>
+            )}
+
+            {errorMessage && !loading && (
+              <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                {errorMessage}
+              </div>
+            )}
+
             <div className="flex items-center justify-between mb-4">
               <p className="text-sm text-gray-600">
                 Showing <span className="font-semibold text-gray-900">{paginatedBlogs.length}</span> of{" "}
@@ -161,6 +202,7 @@ const BlogsPage = () => {
                   <BlogRowCard
                     key={blog.id}
                     id={blog.id}
+                    slug={blog.slug}
                     title={blog.title}
                     excerpt={blog.excerpt}
                     author={blog.author}

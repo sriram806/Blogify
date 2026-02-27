@@ -6,6 +6,7 @@ import { FaHeart, FaComment, FaEye } from "react-icons/fa";
 
 type BlogCardProps = {
   id: string;
+  slug?: string;
   title: string;
   excerpt: string;
   author: string;
@@ -21,6 +22,7 @@ type BlogCardProps = {
 
 const BlogCard = ({
   id,
+  slug,
   title,
   excerpt,
   author,
@@ -34,7 +36,7 @@ const BlogCard = ({
   views = 0,
 }: BlogCardProps) => {
   return (
-    <Link href={`/blog/${id}`}>
+    <Link href={`/blog/${slug || id}`}>
       <div className="group h-full rounded-2xl border border-gray-200 overflow-hidden hover:border-gray-300 hover:shadow-lg transition-all duration-300 bg-white flex flex-col">
         {/* Image */}
         <div className="relative w-full h-48 overflow-hidden bg-gray-100">

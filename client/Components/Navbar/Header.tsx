@@ -25,6 +25,7 @@ const navItems = [
       { name: "Latest", href: "/blog?sort=latest" },
     ],
   },
+  { name: "Write", href: "/blog/write" },
   { name: "Contact", href: "/contact" },
 ];
 

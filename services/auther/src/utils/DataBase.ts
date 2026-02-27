@@ -10,6 +10,7 @@ async function initDB() {
         await sql
             `CREATE TABLE IF NOT EXISTS blogs(
                 id SERIAL PRIMARY KEY,
+                slug VARCHAR(255),
                 title VARCHAR(255) NOT NULL,
                 description VARCHAR(255) NOT NULL,
                 blog_content TEXT NOT NULL,
@@ -18,6 +19,20 @@ async function initDB() {
                 category VARCHAR(100) NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )`;
+
+        await sql`ALTER TABLE blogs ADD COLUMN IF NOT EXISTS slug VARCHAR(255)`;
+
+        await sql`
+            UPDATE blogs
+            SET slug = CONCAT(
+                TRIM(BOTH '-' FROM LOWER(REGEXP_REPLACE(COALESCE(NULLIF(title, ''), 'blog'), '[^a-zA-Z0-9]+', '-', 'g'))),
+                '-',
+                id::text
+            )
+            WHERE slug IS NULL OR slug = ''
+        `;
+
+        await sql`CREATE UNIQUE INDEX IF NOT EXISTS blogs_slug_unique_idx ON blogs(slug)`;
 
         await sql
             `CREATE TABLE IF NOT EXISTS comments(
@@ -35,6 +50,21 @@ async function initDB() {
                 userid VARCHAR(255) NOT NULL,
                 blogid VARCHAR(255) NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )`
+
+        await sql`CREATE UNIQUE INDEX IF NOT EXISTS savedblogs_user_blog_unique_idx ON savedblogs(userid, blogid)`;
+
+        await sql
+            `CREATE TABLE IF NOT EXISTS blog_drafts(
+                id SERIAL PRIMARY KEY,
+                title VARCHAR(255) NOT NULL DEFAULT '',
+                description VARCHAR(255) NOT NULL DEFAULT '',
+                blog_content TEXT NOT NULL DEFAULT '',
+                category VARCHAR(100) NOT NULL DEFAULT 'Technology',
+                author VARCHAR(100) NOT NULL,
+                metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )`
 
         console.log(`Database Initialized Successfully!`);

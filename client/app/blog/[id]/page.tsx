@@ -3,29 +3,154 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FaArrowLeft, FaComment, FaEye, FaHeart, FaShare } from "react-icons/fa";
 import BlogRowCard from "@/Components/Blog/BlogRowCard";
-import { ALL_BLOGS } from "@/Components/Blog/blog.data";
-import { BLOG_DETAILS } from "@/Components/Blog/blog.detail.data";
 import ReactMarkdown from "react-markdown";
+import { BlogDetail, BlogItem } from "@/Components/Blog/blog.types";
+import {
+  addCommentToBlog,
+  BlogCommentItem,
+  fetchAllBlogs,
+  fetchBlogBySlug,
+  fetchCommentsByBlogId,
+  fetchLikeStatus,
+  toggleBlogLike,
+} from "@/Components/Blog/blog.api";
+import { useAuth } from "@/Components/Auth/AuthProvider";
+import LoginModal from "@/Components/Auth/LoginModal";
+import RegisterModal from "@/Components/Auth/RegisterModal";
 
 export default function BlogDetailPage() {
   const params = useParams();
-  const blogId = params.id as string;
+  const blogSlug = params.id as string;
+  const { user } = useAuth();
+  const [blog, setBlog] = useState<BlogDetail | null>(null);
+  const [allBlogs, setAllBlogs] = useState<BlogItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
   const [liked, setLiked] = useState(false);
   const [commentText, setCommentText] = useState("");
+  const [comments, setComments] = useState<BlogCommentItem[]>([]);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [commentError, setCommentError] = useState("");
 
-  const blog = useMemo(() => {
-    return BLOG_DETAILS[blogId] || ALL_BLOGS.find((b) => b.id === blogId);
-  }, [blogId]);
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      setErrorMessage("");
+
+      const [detailResponse, listResponse] = await Promise.all([
+        fetchBlogBySlug(blogSlug),
+        fetchAllBlogs(),
+      ]);
+
+      if (!detailResponse.ok || !detailResponse.blog) {
+        setBlog(null);
+        setErrorMessage(detailResponse.message || "Unable to load this blog.");
+        setLoading(false);
+        return;
+      }
+
+      setBlog(detailResponse.blog);
+      setAllBlogs(listResponse.ok ? listResponse.blogs : []);
+
+      const commentsResponse = await fetchCommentsByBlogId(detailResponse.blog.id);
+      if (commentsResponse.ok) {
+        setComments(commentsResponse.comments);
+      } else {
+        setComments([]);
+      }
+
+      if (user) {
+        const likeResponse = await fetchLikeStatus(detailResponse.blog.id);
+        setLiked(likeResponse.ok ? likeResponse.liked : false);
+      } else {
+        setLiked(false);
+      }
+
+      setCommentError("");
+      setLoading(false);
+    };
+
+    if (blogSlug) {
+      load();
+    }
+  }, [blogSlug, user]);
 
   const relatedBlogs = useMemo(() => {
     if (!blog) return [];
-    return ALL_BLOGS.filter(
-      (b) => b.category === blog.category && b.id !== blog.id
+    return allBlogs.filter(
+      (b) => b.category === blog.category && b.slug !== blog.slug
     ).slice(0, 3);
-  }, [blog]);
+  }, [blog, allBlogs]);
+
+  const requireAuth = () => {
+    if (user) return true;
+    setShowLoginModal(true);
+    return false;
+  };
+
+  const handleLikeToggle = () => {
+    if (!requireAuth()) return;
+    if (!blog) return;
+
+    const run = async () => {
+      const response = await toggleBlogLike(blog.id);
+      if (!response.ok) {
+        return;
+      }
+
+      setLiked(response.liked);
+      setBlog((prev) => {
+        if (!prev) return prev;
+        return { ...prev, likes: response.likes };
+      });
+    };
+
+    run();
+  };
+
+  const handlePostComment = () => {
+    if (!requireAuth()) return;
+    if (!blog) return;
+
+    const normalized = commentText.trim();
+    if (!normalized) return;
+
+    const run = async () => {
+      setCommentError("");
+      const response = await addCommentToBlog(blog.id, normalized, user?.name || "User");
+
+      if (!response.ok || !response.comment) {
+        setCommentError(response.message || "Unable to post comment right now.");
+        return;
+      }
+
+      setComments((prev) => [response.comment, ...prev]);
+      setBlog((prev) => {
+        if (!prev) return prev;
+        return { ...prev, comments: response.commentsCount || prev.comments + 1 };
+      });
+      setCommentText("");
+    };
+
+    run();
+  };
+
+  const displayedLikes = blog?.likes || 0;
+  const displayedComments = comments.length;
+
+  if (loading) {
+    return (
+      <main className="bg-gray-50 min-h-screen">
+        <section className="container mx-auto px-5 sm:px-6 md:px-8 py-12">
+          <div className="text-center text-gray-600">Loading blog...</div>
+        </section>
+      </main>
+    );
+  }
 
   if (!blog) {
     return (
@@ -33,7 +158,7 @@ export default function BlogDetailPage() {
         <section className="container mx-auto px-5 sm:px-6 md:px-8 py-12">
           <div className="text-center">
             <h1 className="text-3xl font-bold text-gray-900">Blog Not Found</h1>
-            <p className="mt-2 text-gray-600">The article you're looking for doesn't exist.</p>
+            <p className="mt-2 text-gray-600">{errorMessage || "The article you're looking for doesn't exist."}</p>
             <Link
               href="/blog"
               className="mt-4 inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-black text-white hover:bg-gray-800 transition"
@@ -48,7 +173,7 @@ export default function BlogDetailPage() {
 
   return (
     <main className="bg-gray-50 min-h-screen">
-      <article className="container mx-auto px-5 sm:px-6 md:px-8 py-8 sm:py-12">
+      <article className="container mx-auto px-5 sm:px-6 md:px-8 py-6 sm:py-6">
         <Link
           href="/blog"
           className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition mb-6"
@@ -56,7 +181,7 @@ export default function BlogDetailPage() {
           <FaArrowLeft /> Back to Blogs
         </Link>
 
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-5xl mx-auto ">
           <header className="mb-8">
             <div className="flex items-center gap-3 mb-4">
               <span className="inline-flex px-3 py-1.5 rounded-full bg-black text-white text-xs font-semibold">
@@ -91,7 +216,7 @@ export default function BlogDetailPage() {
               <div className="flex items-center gap-4">
                 <button
                   type="button"
-                  onClick={() => setLiked(!liked)}
+                  onClick={handleLikeToggle}
                   className={`flex items-center gap-2 px-4 py-2 rounded-full transition ${
                     liked
                       ? "bg-red-100 text-red-600"
@@ -99,7 +224,7 @@ export default function BlogDetailPage() {
                   }`}
                 >
                   <FaHeart className={liked ? "fill-current" : ""} />
-                  <span>{blog.likes + (liked ? 1 : 0)}</span>
+                  <span>{displayedLikes}</span>
                 </button>
                 <button
                   type="button"
@@ -137,7 +262,7 @@ export default function BlogDetailPage() {
               {(blog.tags || []).map((tag) => (
                 <Link
                   key={tag}
-                  href={`/blogs?search=${tag}`}
+                  href={`/blog?search=${tag}`}
                   className="px-3 py-1.5 rounded-full bg-gray-200 text-gray-700 text-sm hover:bg-gray-300 transition"
                 >
                   #{tag}
@@ -167,7 +292,29 @@ export default function BlogDetailPage() {
           </section>
 
           <section className="mb-12">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Comments ({blog.comments})</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Comments ({displayedComments})</h2>
+
+            {!user && (
+              <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 text-sm text-gray-700 flex flex-wrap items-center justify-between gap-3">
+                <span>Login or register to like this blog and post comments.</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowLoginModal(true)}
+                    className="px-4 py-2 rounded-full bg-black text-white hover:bg-gray-800 transition"
+                  >
+                    Login
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowRegisterModal(true)}
+                    className="px-4 py-2 rounded-full border border-gray-300 hover:bg-gray-100 transition"
+                  >
+                    Register
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div className="mb-8 p-4 rounded-xl border border-gray-200 bg-white">
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -182,23 +329,33 @@ export default function BlogDetailPage() {
               />
               <button
                 type="button"
+                onClick={handlePostComment}
                 className="mt-3 px-6 py-2.5 rounded-full bg-black text-white hover:bg-gray-800 transition"
               >
                 Post Comment
               </button>
+              {commentError && <p className="mt-2 text-sm text-red-600">{commentError}</p>}
             </div>
 
             <div className="space-y-4">
-              <div className="p-4 rounded-lg border border-gray-200 bg-white">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 rounded-full bg-gray-300" />
-                  <div>
-                    <p className="font-semibold text-gray-900">Comment Author</p>
-                    <p className="text-xs text-gray-500">2 hours ago</p>
+              {comments.length > 0 ? (
+                comments.map((comment) => (
+                  <div key={comment.id} className="p-4 rounded-lg border border-gray-200 bg-white">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-10 h-10 rounded-full bg-gray-300" />
+                      <div>
+                        <p className="font-semibold text-gray-900">{comment.author}</p>
+                        <p className="text-xs text-gray-500">{comment.createdAtLabel}</p>
+                      </div>
+                    </div>
+                    <p className="text-gray-700">{comment.text}</p>
                   </div>
+                ))
+              ) : (
+                <div className="p-4 rounded-lg border border-gray-200 bg-white text-sm text-gray-600">
+                  No comments yet. Be the first to comment.
                 </div>
-                <p className="text-gray-700">This is a great article! Really helpful insights.</p>
-              </div>
+              )}
             </div>
           </section>
         </div>
@@ -211,6 +368,7 @@ export default function BlogDetailPage() {
                 <BlogRowCard
                   key={relatedBlog.id}
                   id={relatedBlog.id}
+                  slug={relatedBlog.slug}
                   title={relatedBlog.title}
                   excerpt={relatedBlog.excerpt}
                   author={relatedBlog.author}
@@ -234,20 +392,37 @@ export default function BlogDetailPage() {
               <FaEye /> {blog.views} views
             </span>
             <span className="flex items-center gap-2">
-              <FaComment /> {blog.comments} comments
+              <FaComment /> {displayedComments} comments
             </span>
             <span className="flex items-center gap-2">
-              <FaHeart /> {blog.likes + (liked ? 1 : 0)} likes
+              <FaHeart /> {displayedLikes} likes
             </span>
           </div>
           <Link
-            href="/blogs"
+            href="/blog"
             className="px-6 py-2.5 rounded-full bg-black text-white hover:bg-gray-800 transition"
           >
             Explore More
           </Link>
         </div>
       </article>
+
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onSwitchToRegister={() => {
+          setShowLoginModal(false);
+          setShowRegisterModal(true);
+        }}
+      />
+      <RegisterModal
+        isOpen={showRegisterModal}
+        onClose={() => setShowRegisterModal(false)}
+        onSwitchToLogin={() => {
+          setShowRegisterModal(false);
+          setShowLoginModal(true);
+        }}
+      />
     </main>
   );
 }

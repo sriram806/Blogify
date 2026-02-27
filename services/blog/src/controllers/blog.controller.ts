@@ -3,6 +3,13 @@ import axios from "axios";
 import { sql } from "../config/db.js";
 import redisClient from "../config/redisDB.js";
 
+const BLOG_SELECT_FIELDS = sql`
+    b.*,
+    COALESCE(c.comment_count, 0)::int AS comments,
+    COALESCE(s.like_count, 0)::int AS likes,
+    0::int AS views
+`;
+
 export const getallBlogs = async (req: Request, res: Response) => {
     try {
         const SearchQuery = (req.query.SearchQuery as string) || "";
@@ -27,32 +34,76 @@ export const getallBlogs = async (req: Request, res: Response) => {
 
         if (SearchQuery && category) {
             result = await sql`
-                SELECT * FROM blogs 
-                WHERE category = ${category}
-                AND (title ILIKE '%' || ${SearchQuery} || '%' 
-                OR description ILIKE '%' || ${SearchQuery} || '%')
-                ORDER BY created_at DESC;
+                SELECT ${BLOG_SELECT_FIELDS}
+                FROM blogs b
+                LEFT JOIN (
+                    SELECT blogid, COUNT(*)::int AS comment_count
+                    FROM comments
+                    GROUP BY blogid
+                ) c ON c.blogid = b.id::text
+                LEFT JOIN (
+                    SELECT blogid, COUNT(*)::int AS like_count
+                    FROM savedblogs
+                    GROUP BY blogid
+                ) s ON s.blogid = b.id::text
+                WHERE b.category = ${category}
+                AND (b.title ILIKE '%' || ${SearchQuery} || '%' 
+                OR b.description ILIKE '%' || ${SearchQuery} || '%')
+                ORDER BY b.created_at DESC;
             `;
         }
         else if (SearchQuery) {
             result = await sql`
-                SELECT * FROM blogs
-                WHERE title ILIKE '%' || ${SearchQuery} || '%'
-                OR description ILIKE '%' || ${SearchQuery} || '%'
-                ORDER BY created_at DESC;
+                SELECT ${BLOG_SELECT_FIELDS}
+                FROM blogs b
+                LEFT JOIN (
+                    SELECT blogid, COUNT(*)::int AS comment_count
+                    FROM comments
+                    GROUP BY blogid
+                ) c ON c.blogid = b.id::text
+                LEFT JOIN (
+                    SELECT blogid, COUNT(*)::int AS like_count
+                    FROM savedblogs
+                    GROUP BY blogid
+                ) s ON s.blogid = b.id::text
+                WHERE b.title ILIKE '%' || ${SearchQuery} || '%'
+                OR b.description ILIKE '%' || ${SearchQuery} || '%'
+                ORDER BY b.created_at DESC;
             `;
         }
         else if (category) {
             result = await sql`
-                SELECT * FROM blogs
-                WHERE category = ${category}
-                ORDER BY created_at DESC;
+                SELECT ${BLOG_SELECT_FIELDS}
+                FROM blogs b
+                LEFT JOIN (
+                    SELECT blogid, COUNT(*)::int AS comment_count
+                    FROM comments
+                    GROUP BY blogid
+                ) c ON c.blogid = b.id::text
+                LEFT JOIN (
+                    SELECT blogid, COUNT(*)::int AS like_count
+                    FROM savedblogs
+                    GROUP BY blogid
+                ) s ON s.blogid = b.id::text
+                WHERE b.category = ${category}
+                ORDER BY b.created_at DESC;
             `;
         }
         else {
             result = await sql`
-                SELECT * FROM blogs
-                ORDER BY created_at DESC;
+                SELECT ${BLOG_SELECT_FIELDS}
+                FROM blogs b
+                LEFT JOIN (
+                    SELECT blogid, COUNT(*)::int AS comment_count
+                    FROM comments
+                    GROUP BY blogid
+                ) c ON c.blogid = b.id::text
+                LEFT JOIN (
+                    SELECT blogid, COUNT(*)::int AS like_count
+                    FROM savedblogs
+                    GROUP BY blogid
+                ) s ON s.blogid = b.id::text
+                ORDER BY b.created_at DESC;
             `;
         }
 
@@ -70,23 +121,38 @@ export const getallBlogs = async (req: Request, res: Response) => {
     }
 };
 
-export const getBlogById = async (req: Request, res: Response) => {
+export const getBlogBySlug = async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
-        if (!id) return res.status(400).json({ success: false, message: "Blog ID is required" });
+        const { slug } = req.params;
+        if (!slug) return res.status(400).json({ success: false, message: "Blog slug is required" });
 
-        const cachekey = `blog:${id}`;
+        const cachekey = `blog:${slug}`;
         try {
             const cachedBlog = await redisClient.get(cachekey);
 
             if (cachedBlog) {
-                return res.status(200).json({ success: true, blog: JSON.parse(cachedBlog), source: "cache" });
+                const parsed = JSON.parse(cachedBlog);
+                return res.status(200).json({ success: true, blog: parsed.blog, author: parsed.author, source: "cache" });
             }
         } catch (err: any) {
             console.warn("Redis GET error:", err.message);
         }
 
-        const blog = await sql`SELECT * FROM blogs WHERE id = ${id}`;
+        const blog = await sql`
+            SELECT ${BLOG_SELECT_FIELDS}
+            FROM blogs b
+            LEFT JOIN (
+                SELECT blogid, COUNT(*)::int AS comment_count
+                FROM comments
+                GROUP BY blogid
+            ) c ON c.blogid = b.id::text
+            LEFT JOIN (
+                SELECT blogid, COUNT(*)::int AS like_count
+                FROM savedblogs
+                GROUP BY blogid
+            ) s ON s.blogid = b.id::text
+            WHERE b.slug = ${slug} OR b.id::text = ${slug}
+        `;
 
         if (!blog || blog.length === 0) {
             return res.status(404).json({ success: false, message: "Blog not found", source: "database" });
@@ -118,7 +184,7 @@ export const getBlogById = async (req: Request, res: Response) => {
         }
         res.status(200).json({ success: true, blog: blog[0], author });
     } catch (error) {
-        console.error('getBlogById error:', error);
-        res.status(500).json({ success: false, message: `Internal server error at getBlogById: ${error}` });
+        console.error('getBlogBySlug error:', error);
+        res.status(500).json({ success: false, message: `Internal server error at getBlogBySlug: ${error}` });
     }
 };

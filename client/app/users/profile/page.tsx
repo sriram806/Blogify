@@ -1,21 +1,34 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/Components/Auth/AuthProvider";
 import { FaEdit, FaInstagram, FaArrowLeft, FaShareAlt } from "react-icons/fa";
 import Link from "next/link";
 import BlogRowCard from "@/Components/Blog/BlogRowCard";
-import { ALL_BLOGS } from "@/Components/Blog/blog.data";
 import EditProfileModal from "@/Components/Profile/EditProfileModal";
 import { NotAuthenticated } from "@/Components/Utils/NotAuthenticated";
 import { FaLinkedin, FaSquareFacebook } from "react-icons/fa6";
+import { fetchAllBlogs } from "@/Components/Blog/blog.api";
+import { BlogItem } from "@/Components/Blog/blog.types";
 
 export default function UserProfilePage() {
   const { user, loading } = useAuth();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [userBlogs, setUserBlogs] = useState<BlogItem[]>([]);
 
-  const userBlogs = ALL_BLOGS.slice(0, 3);
+  useEffect(() => {
+    const load = async () => {
+      const response = await fetchAllBlogs();
+      if (!response.ok) {
+        setUserBlogs([]);
+        return;
+      }
+      setUserBlogs(response.blogs.slice(0, 3));
+    };
+
+    load();
+  }, []);
 
   const stats = [
     { label: "Blogs", value: userBlogs.length },

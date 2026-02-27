@@ -190,7 +190,7 @@ export const Logout = async (req: Request, res: Response): Promise<Response> => 
 // get user profile
 export const GetProfile = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const userId = req.user?._id;
+    const userId = req.params.userId || req.user?._id;
 
     if (!userId) return res.status(401).json({ success: false, message: "UserId is not provided" });
 

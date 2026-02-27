@@ -6,6 +6,7 @@ import { FaComment, FaEye, FaHeart } from "react-icons/fa";
 
 type BlogRowCardProps = {
   id: string;
+  slug?: string;
   title: string;
   excerpt: string;
   author: string;
@@ -21,6 +22,7 @@ type BlogRowCardProps = {
 
 export default function BlogRowCard({
   id,
+  slug,
   title,
   excerpt,
   author,
@@ -34,7 +36,7 @@ export default function BlogRowCard({
   views = 0,
 }: BlogRowCardProps) {
   return (
-    <Link href={`/blog/${id}`}>
+    <Link href={`/blog/${slug || id}`}>
       <article className="group rounded-2xl border border-gray-200 bg-white p-4 md:p-5 hover:border-gray-300 hover:shadow-md transition">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="relative h-44 md:h-36 md:w-56 shrink-0 overflow-hidden rounded-xl bg-gray-100">

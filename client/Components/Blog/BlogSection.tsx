@@ -6,6 +6,7 @@ import BlogCard from "./BlogCard";
 
 type Blog = {
   id: string;
+  slug?: string;
   title: string;
   excerpt: string;
   author: string;
@@ -77,7 +78,7 @@ export default function BlogSection({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {blogs.map((blog) => (
             <div
-              key={blog.id}
+              key={blog.slug || blog.id}
               className="transition-transform duration-300 hover:-translate-y-1"
             >
               <BlogCard {...blog} />

@@ -1,5 +1,5 @@
 import express from "express";
-import { getallBlogs, getBlogById } from "../controllers/blog.controller.js";
+import { getallBlogs, getBlogBySlug } from "../controllers/blog.controller.js";
 
 const Router = express.Router();
 
@@ -8,6 +8,6 @@ Router.get("/", async (req, res) => {
 });
 
 Router.get("/all-blogs", getallBlogs);
-Router.get("/get/:id", getBlogById);
+Router.get("/get/:slug", getBlogBySlug);
 
 export default Router;

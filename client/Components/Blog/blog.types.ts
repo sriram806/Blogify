@@ -11,6 +11,7 @@ export type BlogDateRange = "all" | "24h" | "7d" | "30d" | "90d";
 
 export type BlogItem = {
   id: string;
+  slug?: string;
   title: string;
   excerpt: string;
   author: string;
