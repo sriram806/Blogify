@@ -85,9 +85,11 @@ const Header = () => {
   return (
     <>
       <header ref={headerRef} className="sticky top-0 z-50 w-full">
-        <div className={menuOpen ? "hidden lg:block" : "block"}>
-          <TopBanner />
-        </div>
+        {!user && (
+          <div className={menuOpen ? "hidden lg:block" : "block"}>
+            <TopBanner />
+          </div>
+        )}
         {/* Navbar */}
         <div className="bg-white/50 backdrop-blur-sm ">
           <div className="container mx-auto px-4">

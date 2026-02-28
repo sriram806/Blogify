@@ -35,41 +35,38 @@ const EditorSection = ({
   onSnippet,
 }: Props) => {
   return (
-    <div className="space-y-5">
-      <div className="rounded-2xl border border-gray-200 p-4 sm:p-5">
-        <label className="text-sm font-semibold text-gray-900">Title</label>
+    <div className="space-y-6">
+      <div className="space-y-4">
         <input
           type="text"
           value={title}
           onChange={(event) => onChangeTitle(event.target.value)}
-          placeholder="Write a compelling title"
-          className="mt-2 w-full rounded-xl border border-gray-300 px-4 py-3 text-sm outline-none focus:border-gray-500"
+          placeholder="Title"
+          className="w-full border-0 border-b border-gray-200 bg-transparent px-0 py-3 text-4xl font-bold leading-tight text-gray-900 outline-none placeholder:text-gray-300 focus:border-gray-300"
         />
-        <p className="text-xs text-gray-500 mt-2">{titleLength}/120 characters</p>
+        <p className="text-xs text-gray-500">{titleLength}/120 characters</p>
 
-        <label className="mt-4 block text-sm font-semibold text-gray-900">Subtitle</label>
         <input
           type="text"
           value={subtitle}
           onChange={(event) => onChangeSubtitle(event.target.value)}
-          placeholder="Optional subtitle for additional context"
-          className="mt-2 w-full rounded-xl border border-gray-300 px-4 py-3 text-sm outline-none focus:border-gray-500"
+          placeholder="Tell your story..."
+          className="w-full border-0 border-b border-gray-200 bg-transparent px-0 py-3 text-lg text-gray-700 outline-none placeholder:text-gray-300 focus:border-gray-300"
         />
 
-        <label className="mt-4 block text-sm font-semibold text-gray-900">Excerpt</label>
         <textarea
           value={excerpt}
           onChange={(event) => onChangeExcerpt(event.target.value)}
-          placeholder="Summarize your article in 1-2 lines"
+          placeholder="Short subtitle / preview text"
           rows={3}
-          className="mt-2 w-full rounded-xl border border-gray-300 px-4 py-3 text-sm outline-none focus:border-gray-500"
+          className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 outline-none focus:border-gray-300"
         />
-        <p className="text-xs text-gray-500 mt-2">{excerptLength}/255 characters</p>
+        <p className="text-xs text-gray-500">{excerptLength}/255 characters</p>
       </div>
 
-      <div className="rounded-2xl border border-gray-200 p-4 sm:p-5">
+      <div className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <label className="text-sm font-semibold text-gray-900">Content Editor (Markdown)</label>
+          <label className="text-sm font-medium text-gray-700">Editor</label>
           <div className="inline-flex rounded-full border border-gray-300 p-1 text-xs">
             {(["edit", "preview", "split"] as EditorTab[]).map((tab) => (
               <button
@@ -77,7 +74,7 @@ const EditorSection = ({
                 type="button"
                 onClick={() => onTabChange(tab)}
                 className={`rounded-full px-3 py-1 capitalize transition ${
-                  editorTab === tab ? "bg-black text-white" : "text-gray-700 hover:bg-gray-100"
+                  editorTab === tab ? "bg-gray-900 text-white" : "text-gray-700 hover:bg-gray-100"
                 }`}
               >
                 {tab}
@@ -104,12 +101,12 @@ const EditorSection = ({
               onChange={(event) => onChangeContent(event.target.value)}
               placeholder="Write your blog post using Markdown..."
               rows={18}
-              className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm outline-none focus:border-gray-500"
+              className="w-full rounded-xl border border-gray-200 px-4 py-4 text-base leading-8 outline-none focus:border-gray-300"
             />
           )}
 
           {editorTab !== "edit" && (
-            <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 min-h-105 prose max-w-none prose-sm sm:prose-base">
+            <div className="rounded-xl border border-gray-200 bg-gray-50 p-5 min-h-105 prose max-w-none prose-sm sm:prose-base">
               {content.trim().length > 0 ? (
                 <ReactMarkdown>{content}</ReactMarkdown>
               ) : (

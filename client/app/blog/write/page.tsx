@@ -5,6 +5,7 @@ import { useAuth } from "@/Components/Auth/AuthProvider";
 import Loading from "@/Components/Utils/Loading";
 import { NotAuthenticated } from "@/Components/Utils/NotAuthenticated";
 import { getAuthorBlogApiBase, secureApiFetch } from "@/lib/api";
+import { fetchBlogBySlug } from "@/Components/Blog/blog.api";
 import DraftsPanel from "@/Components/Write/DraftsPanel";
 import EditorSection from "@/Components/Write/EditorSection";
 import SettingsSidebar from "@/Components/Write/SettingsSidebar";
@@ -31,6 +32,7 @@ import { fileToDataUrl, getReadMinutes, getWordCount, sanitizeFreeText, validate
 const AUTHOR_BLOG_API = getAuthorBlogApiBase();
 
 const BlogWritePage = () => {
+  const [editIdParam, setEditIdParam] = useState("");
   const { user, loading } = useAuth();
   const [draft, setDraft] = useState<BlogDraft>(DEFAULT_DRAFT);
   const [localDrafts, setLocalDrafts] = useState<LocalDraftRecord[]>([]);
@@ -45,8 +47,10 @@ const BlogWritePage = () => {
   const [isPublishing, setIsPublishing] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<string>("");
+  const [editingBlogId, setEditingBlogId] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const importFileRef = useRef<HTMLInputElement | null>(null);
+  const hasLoadedEditDraftRef = useRef(false);
 
   const wordCount = useMemo(() => getWordCount(draft.content), [draft.content]);
   const readMinutes = useMemo(() => getReadMinutes(wordCount), [wordCount]);
@@ -123,6 +127,49 @@ const BlogWritePage = () => {
 
     fetchRemoteDrafts();
   }, [user]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const query = new URLSearchParams(window.location.search);
+    setEditIdParam((query.get("editId") || "").trim());
+  }, []);
+
+  useEffect(() => {
+    if (!user?._id || !editIdParam || hasLoadedEditDraftRef.current) return;
+
+    const loadForEdit = async () => {
+      const response = await fetchBlogBySlug(editIdParam);
+
+      if (!response.ok || !response.blog) {
+        setStatusMessage(response.message || "Unable to load blog for editing.");
+        return;
+      }
+
+      if (String(response.blog.authorId || "") !== String(user._id)) {
+        setStatusMessage("Only the author who created this blog can edit it.");
+        return;
+      }
+
+      hasLoadedEditDraftRef.current = true;
+      setEditingBlogId(response.blog.id);
+      setDraft((prev) => ({
+        ...prev,
+        title: response.blog?.title || "",
+        subtitle: prev.subtitle,
+        excerpt: response.blog?.excerpt || "",
+        category: response.blog?.category || "Technology",
+        content: response.blog?.content || "",
+        coverImageUrl: response.blog?.coverImage || "",
+        coverImageDataUrl: "",
+        tags: response.blog?.tags || [],
+      }));
+      setCoverImageFile(null);
+      setCoverPreview(response.blog.coverImage || "");
+      setStatusMessage("Editing mode enabled for your blog.");
+    };
+
+    loadForEdit();
+  }, [editIdParam, user?._id]);
 
   const updateDraft = <K extends keyof BlogDraft>(key: K, value: BlogDraft[K]) => {
     setDraft((prev) => ({ ...prev, [key]: value }));
@@ -406,7 +453,7 @@ const BlogWritePage = () => {
     if (draft.status === "scheduled" && !draft.scheduledAt) {
       return "Pick a schedule date and time for scheduled publishing.";
     }
-    if (!coverImageFile && !draft.coverImageUrl.trim()) {
+    if (!coverImageFile && !draft.coverImageUrl.trim() && !coverPreview.trim()) {
       return "Upload a cover image file or provide a valid image URL.";
     }
     return "";
@@ -484,8 +531,10 @@ const BlogWritePage = () => {
     setStatusMessage("Publishing in progress...");
 
     try {
-      const imageFile = await resolveCoverFile();
-      if (!imageFile) {
+      const shouldResolveCover = !editingBlogId || Boolean(coverImageFile || (draft.coverImageDataUrl || "").trim());
+      const imageFile = shouldResolveCover ? await resolveCoverFile() : null;
+
+      if (!editingBlogId && !imageFile) {
         setStatusMessage("Cover image is required for publishing.");
         return;
       }
@@ -498,10 +547,16 @@ const BlogWritePage = () => {
       formData.append("description", description.slice(0, 255));
       formData.append("blog_content", contentWithMeta);
       formData.append("category", draft.category);
-      formData.append("file", imageFile);
+      if (imageFile) {
+        formData.append("file", imageFile);
+      }
 
-      const response = await secureApiFetch<PublishResponse>(`${AUTHOR_BLOG_API}/create`, {
-        method: "POST",
+      const endpoint = editingBlogId
+        ? `${AUTHOR_BLOG_API}/update/${encodeURIComponent(editingBlogId)}`
+        : `${AUTHOR_BLOG_API}/create`;
+
+      const response = await secureApiFetch<PublishResponse>(endpoint, {
+        method: editingBlogId ? "PUT" : "POST",
         body: formData,
       });
 
@@ -514,10 +569,14 @@ const BlogWritePage = () => {
         return;
       }
 
-      setStatusMessage(`Blog published successfully (id: ${response.data?.blog?.id ?? "new"}).`);
-      setActiveRemoteDraftId(null);
-      localStorage.removeItem(STORAGE_KEY);
-      await loadRemoteDrafts();
+      if (editingBlogId) {
+        setStatusMessage("Blog updated successfully.");
+      } else {
+        setStatusMessage(`Blog published successfully (id: ${response.data?.blog?.id ?? "new"}).`);
+        setActiveRemoteDraftId(null);
+        localStorage.removeItem(STORAGE_KEY);
+        await loadRemoteDrafts();
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unexpected publish error.";
       setStatusMessage(`Publish failed: ${message}`);
@@ -530,16 +589,16 @@ const BlogWritePage = () => {
   if (!user) return <NotAuthenticated />;
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <section className="container mx-auto px-5 sm:px-6 md:px-8 py-8 sm:py-10">
-        <div className="rounded-3xl border border-gray-200 bg-white p-5 sm:p-8">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+    <main className="min-h-screen bg-white">
+      <section className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+        <div className="sticky top-16 z-20 mb-6 border-b border-gray-200 bg-white/95 pb-4 backdrop-blur">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-gray-500">Author Studio</p>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mt-1">Write your next blog</h1>
-              <p className="text-sm text-gray-600 mt-2">
-                Connected to author service: publish blogs, save server drafts, and manage SEO-ready posts.
-              </p>
+              <p className="text-xs uppercase tracking-[0.2em] text-gray-500">Draft</p>
+              <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 mt-1">
+                {editingBlogId ? "Edit your blog" : "Write your next blog"}
+              </h1>
+              <p className="text-xs text-gray-500 mt-1">Clean writing space inspired by Medium.</p>
             </div>
 
             <WriteTopBar
@@ -553,47 +612,47 @@ const BlogWritePage = () => {
               onPublish={publishPost}
             />
           </div>
+        </div>
 
-          <input
-            ref={importFileRef}
-            type="file"
-            accept="application/json"
-            onChange={importDraft}
-            className="hidden"
-          />
+        <input
+          ref={importFileRef}
+          type="file"
+          accept="application/json"
+          onChange={importDraft}
+          className="hidden"
+        />
 
-          <div className="mt-6 flex flex-wrap items-center gap-3 text-xs text-gray-500">
-            <span className="rounded-full bg-gray-100 px-3 py-1">Words: {wordCount}</span>
-            <span className="rounded-full bg-gray-100 px-3 py-1">Read time: {readMinutes} min</span>
-            <span className="rounded-full bg-gray-100 px-3 py-1">Slug: /blog/{derivedSlug || "your-title"}</span>
-            {lastSavedAt && <span>Auto-saved at {lastSavedAt}</span>}
-            <span>Shortcut: Ctrl/Cmd + S</span>
+        <div className="mb-4 flex flex-wrap items-center gap-3 text-xs text-gray-500">
+          <span className="rounded-full bg-gray-100 px-3 py-1">Words: {wordCount}</span>
+          <span className="rounded-full bg-gray-100 px-3 py-1">Read time: {readMinutes} min</span>
+          <span className="rounded-full bg-gray-100 px-3 py-1">Slug: /blog/{derivedSlug || "your-title"}</span>
+          {lastSavedAt && <span>Auto-saved at {lastSavedAt}</span>}
+          <span>Shortcut: Ctrl/Cmd + S</span>
+        </div>
+
+        {statusMessage && (
+          <div className="mb-4 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+            {statusMessage}
           </div>
+        )}
 
-          {statusMessage && (
-            <div className="mt-4 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
-              {statusMessage}
-            </div>
-          )}
+        {hasLoadedSavedDraft && (
+          <p className="mb-4 text-xs text-gray-500">Existing local draft was loaded. Continue writing or reset if needed.</p>
+        )}
 
-          {hasLoadedSavedDraft && (
-            <p className="mt-3 text-xs text-gray-500">
-              Existing local draft was loaded. Continue writing or reset if needed.
-            </p>
-          )}
+        <DraftsPanel
+          remoteDrafts={remoteDrafts}
+          localDrafts={localDrafts}
+          activeRemoteDraftId={activeRemoteDraftId}
+          onRefreshRemote={loadRemoteDrafts}
+          onDeleteRemote={deleteRemoteDraft}
+          onApplyRemote={applyRemoteDraft}
+          onLoadLocal={loadFromLocalDrafts}
+          onDeleteLocal={deleteFromLocalDrafts}
+        />
 
-          <DraftsPanel
-            remoteDrafts={remoteDrafts}
-            localDrafts={localDrafts}
-            activeRemoteDraftId={activeRemoteDraftId}
-            onRefreshRemote={loadRemoteDrafts}
-            onDeleteRemote={deleteRemoteDraft}
-            onApplyRemote={applyRemoteDraft}
-            onLoadLocal={loadFromLocalDrafts}
-            onDeleteLocal={deleteFromLocalDrafts}
-          />
-
-          <div className="mt-8 grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-6">
+        <div className="mt-6 grid grid-cols-1 xl:grid-cols-[minmax(0,820px)_340px] xl:justify-center gap-8">
+          <div className="xl:pr-2">
             <EditorSection
               title={draft.title}
               subtitle={draft.subtitle}
@@ -610,7 +669,9 @@ const BlogWritePage = () => {
               onTabChange={setEditorTab}
               onSnippet={insertSnippet}
             />
+          </div>
 
+          <div>
             <SettingsSidebar
               draft={draft}
               tagInput={tagInput}

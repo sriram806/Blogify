@@ -157,7 +157,7 @@ export default function HomePage() {
         {/* Background */}
         <div className="absolute inset-0 bg-linear-to-br from-white via-gray-50 to-gray-100" />
 
-        <div className="relative container mx-auto px-5 sm:px-6 md:px-8 sm:py-12 md:py-16">
+        <div className="relative container mx-auto px-5 sm:px-6 md:px-8">
           <div className="grid md:grid-cols-2 gap-10 md:gap-12 items-center">
 
             {/* LEFT CONTENT */}

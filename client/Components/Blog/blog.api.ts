@@ -8,12 +8,37 @@ type RawBlog = {
   description?: string;
   blog_content?: string;
   category?: string;
-  author?: string;
+  author?: string | { id?: string; _id?: string; name?: string; image?: string; bio?: string };
   image_url?: string;
   created_at?: string;
   likes?: number | string;
   comments?: number | string;
   views?: number | string;
+};
+
+type UserDetailsResponse = {
+  success?: boolean;
+  data?: {
+    _id?: string;
+    name?: string;
+    email?: string;
+    image?: string;
+    bio?: string;
+    instagram?: string;
+    facebook?: string;
+    linkedin?: string;
+  };
+};
+
+export type PublicUserProfile = {
+  _id: string;
+  name: string;
+  email?: string;
+  image?: string;
+  bio?: string;
+  instagram?: string;
+  facebook?: string;
+  linkedin?: string;
 };
 
 type AuthorPayload = {
@@ -81,6 +106,9 @@ type AddCommentResponse = {
 };
 
 const BLOG_READ_API = process.env.NEXT_PUBLIC_BLOG_API_URL || "http://localhost:5002/api/v1/blog";
+const USER_API_BASE = process.env.NEXT_PUBLIC_USER_API_URL || "http://localhost:5000/api/v1/users";
+const authorDetailsCache = new Map<string, { name?: string; image?: string; bio?: string }>();
+const AUTHOR_CACHE_STORAGE_KEY = "blogify.author.cache.v1";
 
 const toDateText = (value?: string) => {
   if (!value) return { publishedOn: new Date().toISOString(), publishedAt: "Recently" };
@@ -102,8 +130,9 @@ const toDateText = (value?: string) => {
   };
 };
 
-const getReadMinutes = (content: string) => {
-  const words = content.trim().split(/\s+/).filter(Boolean).length;
+const getReadMinutes = (content: string, excerpt?: string) => {
+  const source = content.trim().length > 0 ? content : (excerpt || "");
+  const words = source.trim().split(/\s+/).filter(Boolean).length;
   return Math.max(1, Math.ceil(words / 200));
 };
 
@@ -113,6 +142,59 @@ const toSlug = (value: string) =>
     .trim()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "") || "blog";
+
+export const buildAuthorProfilePath = (authorName?: string, authorId?: string) => {
+  const handle = toSlug(authorName || "author");
+  const uid = (authorId || "").trim();
+  return uid
+    ? `/users/auther/${encodeURIComponent(uid)}@user=${encodeURIComponent(handle)}`
+    : `/users/auther/@${encodeURIComponent(handle)}`;
+};
+
+const readPersistedAuthorCache = () => {
+  if (typeof window === "undefined") return {} as Record<string, { name?: string; image?: string; bio?: string }>;
+
+  try {
+    const raw = localStorage.getItem(AUTHOR_CACHE_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as Record<string, { name?: string; image?: string; bio?: string }>;
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+};
+
+const persistAuthorCacheEntry = (userId: string, details: { name?: string; image?: string; bio?: string }) => {
+  if (typeof window === "undefined") return;
+
+  try {
+    const current = readPersistedAuthorCache();
+    current[userId] = details;
+    localStorage.setItem(AUTHOR_CACHE_STORAGE_KEY, JSON.stringify(current));
+  } catch {
+    // ignore cache write issues
+  }
+};
+
+const applyCachedAuthorDetails = (blogs: BlogItem[]) => {
+  const persisted = readPersistedAuthorCache();
+
+  return blogs.map((blog) => {
+    const authorId = (blog.authorId || "").trim();
+    if (!authorId) return blog;
+
+    const details = authorDetailsCache.get(authorId) || persisted[authorId];
+    if (!details) return blog;
+
+    authorDetailsCache.set(authorId, details);
+
+    return {
+      ...blog,
+      author: toAuthorDisplayName(details.name || blog.author),
+      authorImage: details.image || blog.authorImage,
+    };
+  });
+};
 
 const parseTagsFromContent = (content: string) => {
   const tagLine = content
@@ -147,24 +229,125 @@ const toAuthorDisplayName = (value?: string) => {
   return raw;
 };
 
+const getAuthorId = (author?: RawBlog["author"]) => {
+  if (!author) return "";
+  if (typeof author === "string") return author;
+  return String(author.id || author._id || "").trim();
+};
+
+const getAuthorName = (author?: RawBlog["author"]) => {
+  if (!author) return "";
+  if (typeof author === "string") return author;
+  return String(author.name || "").trim();
+};
+
+const getAuthorImage = (author?: RawBlog["author"]) => {
+  if (!author || typeof author === "string") return "";
+  return String(author.image || "").trim();
+};
+
+const fetchUserById = async (userId: string) => {
+  const normalizedUserId = userId.trim();
+  if (!normalizedUserId) return null;
+
+  if (authorDetailsCache.has(normalizedUserId)) {
+    return authorDetailsCache.get(normalizedUserId) || null;
+  }
+
+  const persisted = readPersistedAuthorCache()[normalizedUserId];
+  if (persisted) {
+    authorDetailsCache.set(normalizedUserId, persisted);
+    return persisted;
+  }
+
+  const response = await secureApiFetch<UserDetailsResponse>(
+    `${USER_API_BASE}/getUserDetails/${encodeURIComponent(normalizedUserId)}`,
+    { method: "GET" }
+  );
+
+  if (!response.ok || !response.data?.data) {
+    return null;
+  }
+
+  const details = {
+    name: response.data.data.name,
+    image: response.data.data.image,
+    bio: response.data.data.bio,
+  };
+
+  authorDetailsCache.set(normalizedUserId, details);
+  persistAuthorCacheEntry(normalizedUserId, details);
+  return details;
+};
+
+const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number, fallback: T): Promise<T> => {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  try {
+    return await Promise.race<T>([
+      promise,
+      new Promise<T>((resolve) => {
+        timer = setTimeout(() => resolve(fallback), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+};
+
+export const fetchUserProfileById = async (userId: string) => {
+  const response = await secureApiFetch<UserDetailsResponse>(
+    `${USER_API_BASE}/getUserDetails/${encodeURIComponent(userId.trim())}`,
+    { method: "GET" }
+  );
+
+  if (!response.ok || !response.data?.data || !response.data.data._id) {
+    return {
+      ok: false,
+      user: null as PublicUserProfile | null,
+      message: response.message,
+    };
+  }
+
+  const data = response.data.data as PublicUserProfile;
+
+  return {
+    ok: true,
+    user: {
+      _id: String(data._id),
+      name: data.name || "Author",
+      email: data.email,
+      image: data.image,
+      bio: data.bio,
+      instagram: data.instagram,
+      facebook: data.facebook,
+      linkedin: data.linkedin,
+    },
+    message: "OK",
+  };
+};
+
 export const mapRawBlogToItem = (raw: RawBlog): BlogItem => {
   const content = raw.blog_content || "";
   const dateMeta = toDateText(raw.created_at);
   const likes = Number(raw.likes ?? 0);
   const comments = Number(raw.comments ?? 0);
   const views = Number(raw.views ?? 0);
+  const authorId = getAuthorId(raw.author);
+  const authorName = getAuthorName(raw.author);
+  const authorImage = getAuthorImage(raw.author);
 
   return {
     id: String(raw.id),
     slug: raw.slug || toSlug(raw.title || String(raw.id)),
+    authorId: authorId || undefined,
     title: raw.title || "Untitled",
     excerpt: raw.description || "No description available.",
-    author: toAuthorDisplayName(raw.author),
-    authorImage: "/images/author.avif",
+    author: toAuthorDisplayName(authorName || authorId),
+    authorImage: authorImage || "/images/author.avif",
     coverImage: raw.image_url || "/images/bg.avif",
     publishedAt: dateMeta.publishedAt,
     publishedOn: dateMeta.publishedOn,
-    readMinutes: getReadMinutes(content),
+    readMinutes: getReadMinutes(content, raw.description),
     category: raw.category || "General",
     likes: Number.isFinite(likes) ? likes : 0,
     comments: Number.isFinite(comments) ? comments : 0,
@@ -183,6 +366,42 @@ const extractAuthor = (author?: AuthorPayload) => {
   };
 };
 
+const hydrateBlogsWithAuthorDetails = async (blogs: BlogItem[]) => {
+  const authorIds = Array.from(
+    new Set(
+      blogs
+        .map((blog) => blog.authorId || "")
+        .map((id) => id.trim())
+        .filter(Boolean)
+    )
+  );
+
+  if (authorIds.length === 0) return blogs;
+
+  const authorEntries = await Promise.all(
+    authorIds.map(async (authorId) => {
+      const details = await fetchUserById(authorId);
+      return [authorId, details] as const;
+    })
+  );
+
+  const authorById = new Map(authorEntries);
+
+  return blogs.map((blog) => {
+    const authorId = (blog.authorId || "").trim();
+    if (!authorId) return blog;
+
+    const details = authorById.get(authorId);
+    if (!details) return blog;
+
+    return {
+      ...blog,
+      author: toAuthorDisplayName(details.name || blog.author),
+      authorImage: details.image || blog.authorImage,
+    };
+  });
+};
+
 export const fetchAllBlogs = async () => {
   const response = await secureApiFetch<AllBlogsResponse>(`${BLOG_READ_API}/all-blogs`, {
     method: "GET",
@@ -196,7 +415,10 @@ export const fetchAllBlogs = async () => {
     };
   }
 
-  const blogs = (response.data?.blogs || []).map(mapRawBlogToItem);
+  const mappedBlogs = (response.data?.blogs || []).map(mapRawBlogToItem);
+  const blogs = applyCachedAuthorDetails(mappedBlogs);
+
+  void withTimeout(hydrateBlogsWithAuthorDetails(mappedBlogs), 800, mappedBlogs);
 
   return {
     ok: true,
@@ -221,12 +443,13 @@ export const fetchBlogBySlug = async (slug: string) => {
   const raw = response.data.blog;
   const item = mapRawBlogToItem(raw);
   const author = extractAuthor(response.data.author);
+  const fallbackAuthorDetails = item.authorId ? await fetchUserById(item.authorId) : null;
 
   const detail: BlogDetail = {
     ...item,
-    author: author.name,
-    authorImage: author.image,
-    authorBio: author.bio,
+    author: toAuthorDisplayName(author.name || fallbackAuthorDetails?.name || item.author),
+    authorImage: author.image || fallbackAuthorDetails?.image || item.authorImage,
+    authorBio: author.bio || fallbackAuthorDetails?.bio || "",
     content: raw.blog_content || "No content available for this blog.",
     tags: parseTagsFromContent(raw.blog_content || ""),
   };

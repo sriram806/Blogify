@@ -3,7 +3,21 @@ import axios from "axios";
 import { sql } from "../config/db.js";
 import redisClient from "../config/redisDB.js";
 
-const BLOG_SELECT_FIELDS = sql`
+const BLOG_LIST_SELECT_FIELDS = sql`
+    b.id,
+    b.slug,
+    b.title,
+    b.description,
+    b.category,
+    b.author,
+    b.image_url,
+    b.created_at,
+    COALESCE(c.comment_count, 0)::int AS comments,
+    COALESCE(s.like_count, 0)::int AS likes,
+    0::int AS views
+`;
+
+const BLOG_DETAIL_SELECT_FIELDS = sql`
     b.*,
     COALESCE(c.comment_count, 0)::int AS comments,
     COALESCE(s.like_count, 0)::int AS likes,
@@ -34,7 +48,7 @@ export const getallBlogs = async (req: Request, res: Response) => {
 
         if (SearchQuery && category) {
             result = await sql`
-                SELECT ${BLOG_SELECT_FIELDS}
+                SELECT ${BLOG_LIST_SELECT_FIELDS}
                 FROM blogs b
                 LEFT JOIN (
                     SELECT blogid, COUNT(*)::int AS comment_count
@@ -54,7 +68,7 @@ export const getallBlogs = async (req: Request, res: Response) => {
         }
         else if (SearchQuery) {
             result = await sql`
-                SELECT ${BLOG_SELECT_FIELDS}
+                SELECT ${BLOG_LIST_SELECT_FIELDS}
                 FROM blogs b
                 LEFT JOIN (
                     SELECT blogid, COUNT(*)::int AS comment_count
@@ -73,7 +87,7 @@ export const getallBlogs = async (req: Request, res: Response) => {
         }
         else if (category) {
             result = await sql`
-                SELECT ${BLOG_SELECT_FIELDS}
+                SELECT ${BLOG_LIST_SELECT_FIELDS}
                 FROM blogs b
                 LEFT JOIN (
                     SELECT blogid, COUNT(*)::int AS comment_count
@@ -91,7 +105,7 @@ export const getallBlogs = async (req: Request, res: Response) => {
         }
         else {
             result = await sql`
-                SELECT ${BLOG_SELECT_FIELDS}
+                SELECT ${BLOG_LIST_SELECT_FIELDS}
                 FROM blogs b
                 LEFT JOIN (
                     SELECT blogid, COUNT(*)::int AS comment_count
@@ -139,7 +153,7 @@ export const getBlogBySlug = async (req: Request, res: Response) => {
         }
 
         const blog = await sql`
-            SELECT ${BLOG_SELECT_FIELDS}
+            SELECT ${BLOG_DETAIL_SELECT_FIELDS}
             FROM blogs b
             LEFT JOIN (
                 SELECT blogid, COUNT(*)::int AS comment_count

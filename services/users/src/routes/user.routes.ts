@@ -12,7 +12,7 @@ UserRouter.get("/", (req: Request, res: Response) => {
 UserRouter.post("/register", Registration);
 UserRouter.post("/login", Login);
 UserRouter.post("/logout", Logout);
-UserRouter.get("/getUserDetails/:userId", isAuthenticated, GetProfile);
+UserRouter.get("/getUserDetails/:userId", GetProfile);
 UserRouter.get("/profile", isAuthenticated, currentUser);
 UserRouter.put("/profile", isAuthenticated, UpdateProfile);
 UserRouter.put("/profile/image", isAuthenticated, uploadFile, UpdateProfileImage);

@@ -20,40 +20,40 @@ const WriteTopBar = ({
   onPublish,
 }: Props) => {
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <button
         type="button"
         onClick={onSaveDraft}
         disabled={isSavingDraft}
-        className="rounded-full border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-100 transition disabled:opacity-60"
+        className="rounded-full border border-gray-300 px-3.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100 transition disabled:opacity-60"
       >
-        {isSavingDraft ? "Saving..." : "Save Draft"}
+        {isSavingDraft ? "Saving..." : "Save"}
       </button>
       <button
         type="button"
         onClick={onSaveLocalDraft}
-        className="rounded-full border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-100 transition"
+        className="rounded-full border border-gray-300 px-3.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100 transition"
       >
-        Save Local Draft
+        Local
       </button>
       <button
         type="button"
         onClick={onExportDraft}
-        className="rounded-full border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-100 transition"
+        className="rounded-full border border-gray-300 px-3.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100 transition"
       >
         Export Draft
       </button>
       <button
         type="button"
         onClick={onImportDraft}
-        className="rounded-full border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-100 transition"
+        className="rounded-full border border-gray-300 px-3.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100 transition"
       >
         Import Draft
       </button>
       <button
         type="button"
         onClick={onReset}
-        className="rounded-full border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-100 transition"
+        className="rounded-full border border-gray-300 px-3.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100 transition"
       >
         Reset
       </button>
@@ -61,7 +61,7 @@ const WriteTopBar = ({
         type="button"
         onClick={onPublish}
         disabled={isPublishing}
-        className="rounded-full bg-black text-white px-5 py-2 text-sm font-medium disabled:opacity-60 hover:bg-gray-800 transition"
+        className="rounded-full bg-green-700 text-white px-4 py-1.5 text-xs font-semibold disabled:opacity-60 hover:bg-green-800 transition"
       >
         {isPublishing ? "Publishing..." : "Publish"}
       </button>

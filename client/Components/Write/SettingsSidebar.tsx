@@ -43,8 +43,8 @@ const SettingsSidebar = ({
   onFeatured,
 }: Props) => {
   return (
-    <aside className="space-y-5">
-      <div className="rounded-2xl border border-gray-200 p-4 sm:p-5">
+    <aside className="space-y-4">
+      <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 sm:p-5">
         <h2 className="text-sm font-semibold text-gray-900">Post Settings</h2>
 
         <label className="mt-4 block text-xs font-semibold uppercase tracking-[0.14em] text-gray-500">Category</label>
@@ -120,7 +120,7 @@ const SettingsSidebar = ({
         )}
       </div>
 
-      <div className="rounded-2xl border border-gray-200 p-4 sm:p-5">
+      <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 sm:p-5">
         <h2 className="text-sm font-semibold text-gray-900">SEO</h2>
 
         <label className="mt-4 block text-xs font-semibold uppercase tracking-[0.14em] text-gray-500">SEO Title</label>
@@ -151,7 +151,7 @@ const SettingsSidebar = ({
         />
       </div>
 
-      <div className="rounded-2xl border border-gray-200 p-4 sm:p-5">
+      <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 sm:p-5">
         <h2 className="text-sm font-semibold text-gray-900">Publishing</h2>
 
         <label className="mt-4 block text-xs font-semibold uppercase tracking-[0.14em] text-gray-500">Status</label>

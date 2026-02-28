@@ -7,6 +7,7 @@ import BlogCard from "./BlogCard";
 type Blog = {
   id: string;
   slug?: string;
+  authorId?: string;
   title: string;
   excerpt: string;
   author: string;

@@ -2,11 +2,14 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { FaComment, FaEye, FaHeart } from "react-icons/fa";
+import { buildAuthorProfilePath } from "./blog.api";
 
 type BlogRowCardProps = {
   id: string;
   slug?: string;
+  authorId?: string;
   title: string;
   excerpt: string;
   author: string;
@@ -23,6 +26,7 @@ type BlogRowCardProps = {
 export default function BlogRowCard({
   id,
   slug,
+  authorId,
   title,
   excerpt,
   author,
@@ -35,9 +39,27 @@ export default function BlogRowCard({
   comments = 0,
   views = 0,
 }: BlogRowCardProps) {
+  const router = useRouter();
+  const blogPath = `/blog/${slug || id}`;
+  const authorProfilePath = authorId ? buildAuthorProfilePath(author, authorId) : "";
+
+  const handleOpenBlog = () => {
+    router.push(blogPath);
+  };
+
   return (
-    <Link href={`/blog/${slug || id}`}>
-      <article className="group rounded-2xl border border-gray-200 bg-white p-4 md:p-5 hover:border-gray-300 hover:shadow-md transition">
+    <article
+      className="group rounded-2xl border border-gray-200 bg-white p-4 md:p-5 hover:border-gray-300 hover:shadow-md transition cursor-pointer"
+      onClick={handleOpenBlog}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          handleOpenBlog();
+        }
+      }}
+    >
         <div className="flex flex-col md:flex-row gap-4">
           <div className="relative h-44 md:h-36 md:w-56 shrink-0 overflow-hidden rounded-xl bg-gray-100">
             <Image
@@ -74,7 +96,17 @@ export default function BlogRowCard({
                     className="w-7 h-7 rounded-full object-cover"
                   />
                 )}
-                <span className="text-sm font-medium text-gray-700">{author}</span>
+                {authorProfilePath ? (
+                  <Link
+                    href={authorProfilePath}
+                    className="text-sm font-medium text-gray-700 hover:underline"
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    {author}
+                  </Link>
+                ) : (
+                  <span className="text-sm font-medium text-gray-700">{author}</span>
+                )}
               </div>
 
               <div className="flex items-center gap-4 text-sm text-gray-600">
@@ -91,7 +123,6 @@ export default function BlogRowCard({
             </div>
           </div>
         </div>
-      </article>
-    </Link>
+    </article>
   );
 }

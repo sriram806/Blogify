@@ -6,6 +6,9 @@ import BlogRowCard from "@/Components/Blog/BlogRowCard";
 import { BlogDateRange, BlogFilterState, BlogItem, BlogSortBy } from "@/Components/Blog/blog.types";
 import { fetchAllBlogs } from "@/Components/Blog/blog.api";
 
+const BLOGS_CACHE_KEY = "blogify.blog.list.cache.v1";
+const BLOGS_CACHE_TTL_MS = 1000 * 60 * 2;
+
 const getDateRangeDays = (range: BlogDateRange): number | null => {
   switch (range) {
     case "24h":
@@ -59,6 +62,36 @@ const INITIAL_FILTERS: BlogFilterState = {
 
 const PAGE_SIZE = 15;
 
+const readCachedBlogs = () => {
+  if (typeof window === "undefined") return [] as BlogItem[];
+
+  try {
+    const raw = localStorage.getItem(BLOGS_CACHE_KEY);
+    if (!raw) return [];
+
+    const parsed = JSON.parse(raw) as { timestamp?: number; blogs?: BlogItem[] };
+    if (!parsed?.timestamp || !Array.isArray(parsed.blogs)) return [];
+
+    const isFresh = Date.now() - parsed.timestamp <= BLOGS_CACHE_TTL_MS;
+    return isFresh ? parsed.blogs : [];
+  } catch {
+    return [];
+  }
+};
+
+const writeCachedBlogs = (blogs: BlogItem[]) => {
+  if (typeof window === "undefined") return;
+
+  try {
+    localStorage.setItem(
+      BLOGS_CACHE_KEY,
+      JSON.stringify({ timestamp: Date.now(), blogs })
+    );
+  } catch {
+    // ignore cache write errors
+  }
+};
+
 const BlogsPage = () => {
   const [blogs, setBlogs] = useState<BlogItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,15 +104,28 @@ const BlogsPage = () => {
       setLoading(true);
       setErrorMessage("");
 
+      const cachedBlogs = readCachedBlogs();
+      const hasCachedBlogs = cachedBlogs.length > 0;
+
+      if (hasCachedBlogs) {
+        const cachedMaxReadTime = Math.max(1, ...cachedBlogs.map((blog) => blog.readMinutes));
+        setBlogs(cachedBlogs);
+        setFilters((prev) => ({ ...prev, maxReadMinutes: cachedMaxReadTime }));
+        setLoading(false);
+      }
+
       const response = await fetchAllBlogs();
       if (!response.ok) {
-        setErrorMessage(response.message || "Unable to load blogs right now.");
-        setBlogs([]);
-        setLoading(false);
+        if (!hasCachedBlogs) {
+          setErrorMessage(response.message || "Unable to load blogs right now.");
+          setBlogs([]);
+          setLoading(false);
+        }
         return;
       }
 
       const loadedBlogs = response.blogs;
+      writeCachedBlogs(loadedBlogs);
       const maxReadTime = Math.max(1, ...loadedBlogs.map((blog) => blog.readMinutes));
       setBlogs(loadedBlogs);
       setFilters((prev) => ({ ...prev, maxReadMinutes: maxReadTime }));
@@ -203,6 +249,7 @@ const BlogsPage = () => {
                     key={blog.id}
                     id={blog.id}
                     slug={blog.slug}
+                    authorId={blog.authorId}
                     title={blog.title}
                     excerpt={blog.excerpt}
                     author={blog.author}

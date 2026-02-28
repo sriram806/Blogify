@@ -2,11 +2,14 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { FaHeart, FaComment, FaEye } from "react-icons/fa";
+import { buildAuthorProfilePath } from "./blog.api";
 
 type BlogCardProps = {
   id: string;
   slug?: string;
+  authorId?: string;
   title: string;
   excerpt: string;
   author: string;
@@ -23,6 +26,7 @@ type BlogCardProps = {
 const BlogCard = ({
   id,
   slug,
+  authorId,
   title,
   excerpt,
   author,
@@ -35,9 +39,27 @@ const BlogCard = ({
   comments = 0,
   views = 0,
 }: BlogCardProps) => {
+  const router = useRouter();
+  const blogPath = `/blog/${slug || id}`;
+  const authorProfilePath = authorId ? buildAuthorProfilePath(author, authorId) : "";
+
+  const handleOpenBlog = () => {
+    router.push(blogPath);
+  };
+
   return (
-    <Link href={`/blog/${slug || id}`}>
-      <div className="group h-full rounded-2xl border border-gray-200 overflow-hidden hover:border-gray-300 hover:shadow-lg transition-all duration-300 bg-white flex flex-col">
+    <article
+      className="group h-full rounded-2xl border border-gray-200 overflow-hidden hover:border-gray-300 hover:shadow-lg transition-all duration-300 bg-white flex flex-col cursor-pointer"
+      onClick={handleOpenBlog}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          handleOpenBlog();
+        }
+      }}
+    >
         {/* Image */}
         <div className="relative w-full h-48 overflow-hidden bg-gray-100">
           <Image
@@ -83,7 +105,17 @@ const BlogCard = ({
                 className="w-6 h-6 rounded-full object-cover"
               />
             )}
-            <span className="text-sm font-medium text-gray-700">{author}</span>
+            {authorProfilePath ? (
+              <Link
+                href={authorProfilePath}
+                className="text-sm font-medium text-gray-700 hover:underline"
+                onClick={(event) => event.stopPropagation()}
+              >
+                {author}
+              </Link>
+            ) : (
+              <span className="text-sm font-medium text-gray-700">{author}</span>
+            )}
           </div>
 
           {/* Engagement */}
@@ -102,8 +134,7 @@ const BlogCard = ({
             </div>
           </div>
         </div>
-      </div>
-    </Link>
+    </article>
   );
 };
 

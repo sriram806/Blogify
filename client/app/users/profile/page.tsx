@@ -19,16 +19,27 @@ export default function UserProfilePage() {
 
   useEffect(() => {
     const load = async () => {
+      if (!user?._id) {
+        setUserBlogs([]);
+        return;
+      }
+
       const response = await fetchAllBlogs();
       if (!response.ok) {
         setUserBlogs([]);
         return;
       }
-      setUserBlogs(response.blogs.slice(0, 3));
+
+      const filtered = response.blogs
+        .filter((blog) => String(blog.authorId || "") === String(user._id))
+        .sort((a, b) => new Date(b.publishedOn).getTime() - new Date(a.publishedOn).getTime())
+        .slice(0, 3);
+
+      setUserBlogs(filtered);
     };
 
     load();
-  }, []);
+  }, [user?._id]);
 
   const stats = [
     { label: "Blogs", value: userBlogs.length },

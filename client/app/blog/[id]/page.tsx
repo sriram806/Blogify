@@ -4,12 +4,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { FaArrowLeft, FaComment, FaEye, FaHeart, FaShare } from "react-icons/fa";
+import { FaArrowLeft, FaComment, FaEdit, FaEye, FaHeart, FaShare } from "react-icons/fa";
 import BlogRowCard from "@/Components/Blog/BlogRowCard";
 import ReactMarkdown from "react-markdown";
 import { BlogDetail, BlogItem } from "@/Components/Blog/blog.types";
-import {
-  addCommentToBlog,
+import { addCommentToBlog,
+  buildAuthorProfilePath,
   BlogCommentItem,
   fetchAllBlogs,
   fetchBlogBySlug,
@@ -86,6 +86,9 @@ export default function BlogDetailPage() {
     ).slice(0, 3);
   }, [blog, allBlogs]);
 
+  const canEditBlog = Boolean(user?._id && blog?.authorId && user._id === blog.authorId);
+  const authorProfilePath = blog?.authorId ? buildAuthorProfilePath(blog.author, blog.authorId) : "";
+
   const requireAuth = () => {
     if (user) return true;
     setShowLoginModal(true);
@@ -128,7 +131,9 @@ export default function BlogDetailPage() {
         return;
       }
 
-      setComments((prev) => [response.comment, ...prev]);
+      const createdComment = response.comment;
+
+      setComments((prev) => [createdComment, ...prev]);
       setBlog((prev) => {
         if (!prev) return prev;
         return { ...prev, comments: response.commentsCount || prev.comments + 1 };
@@ -145,11 +150,33 @@ export default function BlogDetailPage() {
   if (loading) {
     return (
       <main className="bg-gray-50 min-h-screen">
-        <section className="container mx-auto px-5 sm:px-6 md:px-8 py-12">
-          <div className="text-center text-gray-600">Loading blog...</div>
-        </section>
-      </main>
-    );
+        <section className="container max-w-5xl mx-auto px-5 sm:px-6 md:px-8 py-12">
+    
+    <div className="animate-pulse space-y-8">
+      
+      {/* Blog Title Skeleton */}
+      <div className="space-y-4">
+        <div className="h-10 bg-gray-300 rounded mx-auto"></div>
+        <div className="h-4 bg-gray-300 rounded mx-auto"></div>
+      </div>
+
+      {/* Featured Image Skeleton */}
+      <div className="h-64 bg-gray-300 rounded-xl w-full"></div>
+
+      {/* Blog Content Skeleton */}
+      <div className="space-y-4">
+        <div className="h-4 bg-gray-300 rounded w-full"></div>
+        <div className="h-4 bg-gray-300 rounded w-5/6"></div>
+        <div className="h-4 bg-gray-300 rounded w-4/6"></div>
+        <div className="h-4 bg-gray-300 rounded w-full"></div>
+        <div className="h-4 bg-gray-300 rounded w-3/4"></div>
+      </div>
+
+    </div>
+
+  </section>
+</main>
+    )
   }
 
   if (!blog) {
@@ -198,17 +225,37 @@ export default function BlogDetailPage() {
 
             <div className="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-gray-200">
               <div className="flex items-center gap-3">
-                {blog.authorImage && (
-                  <Image
-                    src={blog.authorImage}
-                    alt={blog.author}
-                    width={48}
-                    height={48}
-                    className="w-12 h-12 rounded-full object-cover"
-                  />
+                {authorProfilePath ? (
+                  <Link href={authorProfilePath} className="inline-flex items-center gap-3">
+                    {blog.authorImage && (
+                      <Image
+                        src={blog.authorImage}
+                        alt={blog.author}
+                        width={48}
+                        height={48}
+                        className="w-12 h-12 rounded-full object-cover"
+                      />
+                    )}
+                  </Link>
+                ) : (
+                  blog.authorImage && (
+                    <Image
+                      src={blog.authorImage}
+                      alt={blog.author}
+                      width={48}
+                      height={48}
+                      className="w-12 h-12 rounded-full object-cover"
+                    />
+                  )
                 )}
                 <div>
-                  <p className="font-semibold text-gray-900">{blog.author}</p>
+                  {authorProfilePath ? (
+                    <Link href={authorProfilePath} className="font-semibold text-gray-900 hover:underline">
+                      {blog.author}
+                    </Link>
+                  ) : (
+                    <p className="font-semibold text-gray-900">{blog.author}</p>
+                  )}
                   <p className="text-sm text-gray-500">{blog.readMinutes} min read</p>
                 </div>
               </div>
@@ -232,6 +279,15 @@ export default function BlogDetailPage() {
                 >
                   <FaShare />
                 </button>
+                {canEditBlog && (
+                  <Link
+                    href={`/blog/write?editId=${blog.id}`}
+                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-black text-white hover:bg-gray-800 transition"
+                  >
+                    <FaEdit />
+                    Edit
+                  </Link>
+                )}
               </div>
             </div>
           </header>
@@ -273,17 +329,37 @@ export default function BlogDetailPage() {
 
           <section className="py-8 border-b border-gray-200 mb-8">
             <div className="flex items-center gap-4 mb-6">
-              {blog.authorImage && (
-                <Image
-                  src={blog.authorImage}
-                  alt={blog.author}
-                  width={64}
-                  height={64}
-                  className="w-16 h-16 rounded-full object-cover"
-                />
+              {authorProfilePath ? (
+                <Link href={authorProfilePath} className="inline-flex items-center gap-4">
+                  {blog.authorImage && (
+                    <Image
+                      src={blog.authorImage}
+                      alt={blog.author}
+                      width={64}
+                      height={64}
+                      className="w-16 h-16 rounded-full object-cover"
+                    />
+                  )}
+                </Link>
+              ) : (
+                blog.authorImage && (
+                  <Image
+                    src={blog.authorImage}
+                    alt={blog.author}
+                    width={64}
+                    height={64}
+                    className="w-16 h-16 rounded-full object-cover"
+                  />
+                )
               )}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">{blog.author}</h3>
+                {authorProfilePath ? (
+                  <Link href={authorProfilePath} className="text-lg font-semibold text-gray-900 hover:underline">
+                    {blog.author}
+                  </Link>
+                ) : (
+                  <h3 className="text-lg font-semibold text-gray-900">{blog.author}</h3>
+                )}
                 {blog.authorBio && (
                   <p className="text-gray-600">{blog.authorBio}</p>
                 )}
@@ -369,6 +445,7 @@ export default function BlogDetailPage() {
                   key={relatedBlog.id}
                   id={relatedBlog.id}
                   slug={relatedBlog.slug}
+                  authorId={relatedBlog.authorId}
                   title={relatedBlog.title}
                   excerpt={relatedBlog.excerpt}
                   author={relatedBlog.author}
