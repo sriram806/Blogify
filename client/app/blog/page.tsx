@@ -61,6 +61,41 @@ const INITIAL_FILTERS: BlogFilterState = {
 };
 
 const PAGE_SIZE = 15;
+const SKELETON_ROWS = 6;
+
+const BlogRowSkeleton = () => (
+  <article className="rounded-2xl border border-gray-200 bg-white p-4 md:p-5 animate-pulse">
+    <div className="flex flex-col md:flex-row gap-4">
+      <div className="h-44 md:h-36 md:w-56 shrink-0 rounded-xl bg-gray-200" />
+
+      <div className="flex-1">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="h-5 w-20 rounded-full bg-gray-200" />
+          <div className="h-4 w-20 rounded bg-gray-200" />
+          <div className="h-4 w-14 rounded bg-gray-200" />
+        </div>
+
+        <div className="space-y-2">
+          <div className="h-6 w-3/4 rounded bg-gray-200" />
+          <div className="h-4 w-full rounded bg-gray-200" />
+          <div className="h-4 w-5/6 rounded bg-gray-200" />
+        </div>
+
+        <div className="mt-5 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <div className="h-7 w-7 rounded-full bg-gray-200" />
+            <div className="h-4 w-28 rounded bg-gray-200" />
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="h-4 w-10 rounded bg-gray-200" />
+            <div className="h-4 w-10 rounded bg-gray-200" />
+            <div className="h-4 w-10 rounded bg-gray-200" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </article>
+);
 
 const readCachedBlogs = () => {
   if (typeof window === "undefined") return [] as BlogItem[];
@@ -219,30 +254,32 @@ const BlogsPage = () => {
           </aside>
 
           <div className="lg:w-[76%]">
-            {loading && (
-              <div className="mb-4 rounded-2xl border border-gray-200 bg-white p-4 text-sm text-gray-600">
-                Loading blogs...
-              </div>
-            )}
-
             {errorMessage && !loading && (
               <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
                 {errorMessage}
               </div>
             )}
 
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-sm text-gray-600">
-                Showing <span className="font-semibold text-gray-900">{paginatedBlogs.length}</span> of{" "}
-                <span className="font-semibold text-gray-900">{filteredBlogs.length}</span> filtered blogs
-              </p>
-              <p className="text-sm text-gray-600">
-                Page <span className="font-semibold text-gray-900">{currentPage}</span> /{" "}
-                <span className="font-semibold text-gray-900">{totalPages}</span>
-              </p>
-            </div>
+            {!loading && (
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-sm text-gray-600">
+                  Showing <span className="font-semibold text-gray-900">{paginatedBlogs.length}</span> of{" "}
+                  <span className="font-semibold text-gray-900">{filteredBlogs.length}</span> filtered blogs
+                </p>
+                <p className="text-sm text-gray-600">
+                  Page <span className="font-semibold text-gray-900">{currentPage}</span> /{" "}
+                  <span className="font-semibold text-gray-900">{totalPages}</span>
+                </p>
+              </div>
+            )}
 
-            {filteredBlogs.length > 0 ? (
+            {loading ? (
+              <div className="space-y-4">
+                {Array.from({ length: SKELETON_ROWS }).map((_, index) => (
+                  <BlogRowSkeleton key={`blog-skeleton-${index}`} />
+                ))}
+              </div>
+            ) : filteredBlogs.length > 0 ? (
               <div className="space-y-4">
                 {paginatedBlogs.map((blog) => (
                   <BlogRowCard

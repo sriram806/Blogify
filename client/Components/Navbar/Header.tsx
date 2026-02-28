@@ -165,13 +165,24 @@ const Header = () => {
                 </nav>
 
                 {/* Profile */}
-                <div className="relative">
+                <div className="relative px-1 py-1">
                   <button
                     type="button"
                     onClick={() => setProfileOpen((prev) => !prev)}
-                    className="flex items-center gap-2 cursor-pointer bg-white/60 px-3 py-2 rounded-full border border-gray-200 hover:bg-white transition"
+                    className="flex items-center gap-2 cursor-pointer bg-white/60 px-1 py-1 rounded-full border border-gray-200 hover:bg-white transition"
                   >
-                    <FaUserCircle className="text-2xl text-gray-600" />
+                    <div className="relative w-6 h-6">
+                      {user?.image ? (
+                        <Image
+                          src={user.image}
+                          alt={user.name || "User"}
+                          fill
+                          className="rounded-full object-cover"
+                        />
+                      ) : (
+                        <FaUserCircle className="text-3xl text-gray-600" />
+                      )}
+                    </div>
                     <span className="text-sm text-gray-700">
                       {user?.name ? user.name.split(" ")[0] : "Account"}
                     </span>
