@@ -120,8 +120,8 @@ const Header = () => {
                             href={item.href}
                             className={`inline-flex items-center rounded-full px-3 py-1.5 text-xs font-medium text-white transition duration-200 ${
                               isActive
-                                ? "bg-linear-to-r from-violet-600 to-fuchsia-600"
-                                : "bg-linear-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600"
+                                ? "bg-linear-to-r from-sky-300 to-sky-600"
+                                : "bg-linear-to-r from-sky-300 to-sky-400 hover:from-sky-600 hover:to-sky-800"
                             }`}
                           >
                             Write
@@ -156,7 +156,7 @@ const Header = () => {
                         </button>
 
                         {activeDropdown === item.name && (
-                          <div className="absolute top-full mt-3 w-56 rounded-2xl border border-gray-200 bg-white shadow-xl overflow-hidden">
+                          <div className="absolute top-ful w-56 rounded-2xl border border-gray-200 bg-white shadow-xl overflow-hidden">
                             <div className="px-4 py-3 border-b border-gray-100">
                               <p className="text-xs uppercase tracking-[0.2em] text-gray-500">
                                 Explore
