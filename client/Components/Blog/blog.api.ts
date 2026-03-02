@@ -83,6 +83,11 @@ type LikeStatusResponse = {
   message?: string;
 };
 
+type DeleteBlogResponse = {
+  success?: boolean;
+  message?: string;
+};
+
 type CommentPayload = {
   id: number | string;
   comment: string;
@@ -581,5 +586,23 @@ export const toggleBlogLike = async (blogId: string) => {
     liked: Boolean(response.data?.liked),
     likes: Number(response.data?.likes || 0),
     message: "OK",
+  };
+};
+
+export const deleteBlogById = async (blogId: string) => {
+  const response = await secureApiFetch<DeleteBlogResponse>(`${getAuthorBlogApiBase()}/delete/${encodeURIComponent(blogId)}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    return {
+      ok: false,
+      message: response.message,
+    };
+  }
+
+  return {
+    ok: true,
+    message: response.data?.message || "Blog deleted successfully",
   };
 };

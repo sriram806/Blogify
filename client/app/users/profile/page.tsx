@@ -16,6 +16,7 @@ export default function UserProfilePage() {
   const { user, loading } = useAuth();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [userBlogs, setUserBlogs] = useState<BlogItem[]>([]);
+  const [showAllBlogs, setShowAllBlogs] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -32,8 +33,7 @@ export default function UserProfilePage() {
 
       const filtered = response.blogs
         .filter((blog) => String(blog.authorId || "") === String(user._id))
-        .sort((a, b) => new Date(b.publishedOn).getTime() - new Date(a.publishedOn).getTime())
-        .slice(0, 3);
+        .sort((a, b) => new Date(b.publishedOn).getTime() - new Date(a.publishedOn).getTime());
 
       setUserBlogs(filtered);
     };
@@ -46,6 +46,8 @@ export default function UserProfilePage() {
     { label: "Followers", value: "1.2K" },
     { label: "Following", value: "342" },
   ];
+
+  const displayedBlogs = showAllBlogs ? userBlogs : userBlogs.slice(0, 3);
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -186,14 +188,30 @@ export default function UserProfilePage() {
 
         {/* BLOGS */}
         <section className="mt-10 md:mt-12">
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 md:mb-6">
-            Latest Blogs
-          </h2>
+          <div className="mb-4 flex items-center justify-between gap-3 md:mb-6">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+              My Blogs
+            </h2>
+            {userBlogs.length > 3 && (
+              <button
+                type="button"
+                onClick={() => setShowAllBlogs((prev) => !prev)}
+                className="rounded-full border border-gray-300 px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-100"
+              >
+                {showAllBlogs ? "Show latest 3" : `View all (${userBlogs.length})`}
+              </button>
+            )}
+          </div>
 
           <div className="space-y-4">
-            {userBlogs.map((blog) => (
+            {displayedBlogs.map((blog) => (
               <BlogRowCard key={blog.id} {...blog} readTime={`${blog.readMinutes} min`} />
             ))}
+            {userBlogs.length === 0 && (
+              <div className="rounded-2xl border border-gray-200 bg-white p-6 text-sm text-gray-600">
+                You have not published any blogs yet.
+              </div>
+            )}
           </div>
         </section>
 

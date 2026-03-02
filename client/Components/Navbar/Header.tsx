@@ -39,6 +39,7 @@ const Header = () => {
   const [profileOpen, setProfileOpen] = useState(false);
   const headerRef = useRef<HTMLElement | null>(null);
   const [menuTopOffset, setMenuTopOffset] = useState(0);
+  const visibleNavItems = user ? navItems : navItems.filter((item) => item.name !== "Write");
 
   useEffect(() => {
     const updateMenuTopOffset = () => {
@@ -109,9 +110,25 @@ const Header = () => {
               {/* Desktop Nav + Profile */}
               <div className="hidden lg:flex items-center gap-8">
                 <nav className="flex gap-8">
-                  {navItems.map((item) => {
+                  {visibleNavItems.map((item) => {
                     const isActive = pathname === item.href;
                     if (!item.children) {
+                      if (item.name === "Write") {
+                        return (
+                          <Link
+                            key={item.name}
+                            href={item.href}
+                            className={`inline-flex items-center rounded-full px-3 py-1.5 text-xs font-medium text-white transition duration-200 ${
+                              isActive
+                                ? "bg-linear-to-r from-violet-600 to-fuchsia-600"
+                                : "bg-linear-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600"
+                            }`}
+                          >
+                            Write
+                          </Link>
+                        );
+                      }
+
                       return (
                         <Link
                           key={item.name}
@@ -269,7 +286,7 @@ const Header = () => {
         menuOpen={menuOpen}
         menuTopOffset={menuTopOffset}
         pathname={pathname}
-        navItems={navItems}
+        navItems={visibleNavItems}
         user={user}
         onClose={() => setMenuOpen(false)}
         onOpenLogin={() => {

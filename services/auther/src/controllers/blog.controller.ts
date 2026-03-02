@@ -361,3 +361,40 @@ export const DeleteDraft = async (req: AuthRequest, res: Response) => {
         return res.status(500).json({ success: false, message: `Internal server error at DeleteDraft: ${error}` });
     }
 };
+
+export const UploadContentImages = async (req: AuthRequest, res: Response) => {
+    try {
+        if (!req.user?.id) {
+            return res.status(401).json({ success: false, message: "Unauthorized" });
+        }
+
+        const files = ((req.files as Express.Multer.File[] | undefined) || []).filter(Boolean);
+        if (!files.length) {
+            return res.status(400).json({ success: false, message: "No images uploaded" });
+        }
+
+        const uploads = await Promise.all(
+            files.map(async (file) => {
+                const fileBuffer = await getBuffer(file);
+                if (!fileBuffer) {
+                    throw new Error("Invalid image file data");
+                }
+
+                const uploaded = await cloudinary.uploader.upload(fileBuffer, {
+                    folder: "blog_content_images",
+                    resource_type: "image",
+                });
+
+                return uploaded.secure_url;
+            })
+        );
+
+        return res.status(200).json({
+            success: true,
+            message: "Content images uploaded",
+            images: uploads,
+        });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: `Internal server error at UploadContentImages: ${error}` });
+    }
+};

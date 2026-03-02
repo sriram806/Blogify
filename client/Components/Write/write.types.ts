@@ -53,3 +53,4 @@ export type LocalDraftRecord = {
 export type DraftListResponse = { drafts?: RemoteDraft[]; message?: string };
 export type DraftSaveResponse = { draft?: { id?: number }; message?: string };
 export type PublishResponse = { blog?: { id?: number }; message?: string };
+export type ContentImageUploadResponse = { images?: string[]; message?: string };

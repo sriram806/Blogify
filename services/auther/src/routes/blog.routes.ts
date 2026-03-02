@@ -1,7 +1,7 @@
 import express from 'express';
 import isAuthenticated from '../middleware/isAuth';
-import { AddComment, CreateBlog, DeleteBlog, DeleteDraft, GetCommentsByBlog, GetLikeStatus, GetMyDrafts, SaveDraft, ToggleLike, UpdateBlog } from '../controllers/blog.controller';
-import uploadFile from '../middleware/multer.middleware';
+import { AddComment, CreateBlog, DeleteBlog, DeleteDraft, GetCommentsByBlog, GetLikeStatus, GetMyDrafts, SaveDraft, ToggleLike, UpdateBlog, UploadContentImages } from '../controllers/blog.controller';
+import uploadFile, { uploadContentImages } from '../middleware/multer.middleware';
 
 const BlogRouter = express.Router();
 
@@ -19,5 +19,6 @@ BlogRouter.get('/comment/:blogId', GetCommentsByBlog);
 BlogRouter.post('/draft/save', isAuthenticated, SaveDraft);
 BlogRouter.get('/draft/my', isAuthenticated, GetMyDrafts);
 BlogRouter.delete('/draft/:id', isAuthenticated, DeleteDraft);
+BlogRouter.post('/content-images/upload', isAuthenticated, uploadContentImages, UploadContentImages);
 
 export default BlogRouter;

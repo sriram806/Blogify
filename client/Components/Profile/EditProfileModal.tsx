@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import Image from "next/image";
+import { useEffect, useState } from "react";
 import { AuthUser } from "@/Components/Auth/AuthProvider";
 import { FaTimes } from "react-icons/fa";
 
@@ -25,6 +26,21 @@ export default function EditProfileModal({
   });
 
   const [isSaving, setIsSaving] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState("");
+
+  useEffect(() => {
+    setFormData({
+      name: user?.name || "",
+      email: user?.email || "",
+      bio: user?.bio || "",
+      instagram: user?.instagram || "",
+      facebook: user?.facebook || "",
+      linkedin: user?.linkedin || "",
+    });
+    setImageFile(null);
+    setImagePreview(user?.image || "");
+  }, [user, isOpen]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -33,8 +49,32 @@ export default function EditProfileModal({
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    if (!file) {
+      setImageFile(null);
+      setImagePreview(user?.image || "");
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      alert("Please select a valid image file.");
+      e.target.value = "";
+      return;
+    }
+
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert("Image size should be less than 5MB.");
+      e.target.value = "";
+      return;
+    }
+
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const handleSubmit = async () => {
     setIsSaving(true);
 
     try {
@@ -51,6 +91,21 @@ export default function EditProfileModal({
 
       if (!response.ok) {
         throw new Error("Failed to update profile");
+      }
+
+      if (imageFile) {
+        const imageFormData = new FormData();
+        imageFormData.append("file", imageFile);
+
+        const imageResponse = await fetch(`${API_BASE}/profile/image`, {
+          method: "PUT",
+          credentials: "include",
+          body: imageFormData,
+        });
+
+        if (!imageResponse.ok) {
+          throw new Error("Failed to update profile image");
+        }
       }
 
       onClose();
@@ -79,7 +134,36 @@ export default function EditProfileModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-96 overflow-y-auto">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSubmit();
+          }}
+          className="p-6 space-y-4 max-h-96 overflow-y-auto"
+        >
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Profile Image
+            </label>
+            <div className="flex items-center gap-3">
+              <div className="relative h-14 w-14 overflow-hidden rounded-full bg-gray-200">
+                {imagePreview ? (
+                  <Image src={imagePreview} alt="Profile preview" fill className="object-cover" unoptimized />
+                ) : (
+                  <div className="flex h-full items-center justify-center text-xs font-semibold text-gray-500">
+                    No image
+                  </div>
+                )}
+              </div>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="block w-full text-sm text-gray-600 file:mr-3 file:rounded-full file:border file:border-gray-300 file:bg-white file:px-3 file:py-1.5 file:text-xs file:font-medium hover:file:bg-gray-100"
+              />
+            </div>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Name

@@ -2,9 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { FaArrowLeft, FaComment, FaEdit, FaEye, FaHeart, FaShare } from "react-icons/fa";
+import { FaArrowLeft, FaComment, FaEdit, FaEye, FaHeart, FaShare, FaTrash } from "react-icons/fa";
 import BlogRowCard from "@/Components/Blog/BlogRowCard";
 import ReactMarkdown from "react-markdown";
 import { BlogDetail, BlogItem } from "@/Components/Blog/blog.types";
@@ -14,6 +14,7 @@ import { addCommentToBlog,
   fetchAllBlogs,
   fetchBlogBySlug,
   fetchCommentsByBlogId,
+  deleteBlogById,
   fetchLikeStatus,
   toggleBlogLike,
 } from "@/Components/Blog/blog.api";
@@ -22,6 +23,7 @@ import LoginModal from "@/Components/Auth/LoginModal";
 import RegisterModal from "@/Components/Auth/RegisterModal";
 
 export default function BlogDetailPage() {
+  const router = useRouter();
   const params = useParams();
   const blogSlug = params.id as string;
   const { user } = useAuth();
@@ -35,6 +37,8 @@ export default function BlogDetailPage() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [commentError, setCommentError] = useState("");
+  const [deleteError, setDeleteError] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -146,6 +150,25 @@ export default function BlogDetailPage() {
 
   const displayedLikes = blog?.likes || 0;
   const displayedComments = comments.length;
+
+  const handleDeleteBlog = async () => {
+    if (!blog) return;
+
+    const shouldDelete = window.confirm("Are you sure you want to delete this blog? This action cannot be undone.");
+    if (!shouldDelete) return;
+
+    setDeleteError("");
+    setIsDeleting(true);
+
+    const response = await deleteBlogById(blog.id);
+    if (!response.ok) {
+      setDeleteError(response.message || "Unable to delete blog right now.");
+      setIsDeleting(false);
+      return;
+    }
+
+    router.replace("/blog");
+  };
 
   if (loading) {
     return (
@@ -280,16 +303,28 @@ export default function BlogDetailPage() {
                   <FaShare />
                 </button>
                 {canEditBlog && (
-                  <Link
-                    href={`/blog/write?editId=${blog.id}`}
-                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-black text-white hover:bg-gray-800 transition"
-                  >
-                    <FaEdit />
-                    Edit
-                  </Link>
+                  <>
+                    <Link
+                      href={`/blog/write?editId=${blog.id}`}
+                      className="flex items-center gap-2 px-4 py-2 rounded-full bg-black text-white hover:bg-gray-800 transition"
+                    >
+                      <FaEdit />
+                      Edit
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={handleDeleteBlog}
+                      disabled={isDeleting}
+                      className="flex items-center gap-2 px-4 py-2 rounded-full bg-red-600 text-white hover:bg-red-700 transition disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <FaTrash />
+                      {isDeleting ? "Deleting..." : "Delete"}
+                    </button>
+                  </>
                 )}
               </div>
             </div>
+            {deleteError && <p className="mt-3 text-sm text-red-600">{deleteError}</p>}
           </header>
 
           <div className="relative w-full h-96 mb-12 rounded-2xl overflow-hidden bg-gray-100">

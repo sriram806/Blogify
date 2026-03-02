@@ -20,6 +20,7 @@ import {
 } from "@/Components/Write/write.constants";
 import {
   BlogDraft,
+  ContentImageUploadResponse,
   DraftListResponse,
   DraftSaveResponse,
   EditorTab,
@@ -46,10 +47,12 @@ const BlogWritePage = () => {
   const [hasLoadedSavedDraft, setHasLoadedSavedDraft] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
+  const [isUploadingContentImages, setIsUploadingContentImages] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<string>("");
   const [editingBlogId, setEditingBlogId] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const importFileRef = useRef<HTMLInputElement | null>(null);
+  const contentImagesRef = useRef<HTMLInputElement | null>(null);
   const hasLoadedEditDraftRef = useRef(false);
 
   const wordCount = useMemo(() => getWordCount(draft.content), [draft.content]);
@@ -243,6 +246,69 @@ const BlogWritePage = () => {
       const cursor = start + text.length;
       textarea.setSelectionRange(cursor, cursor);
     });
+  };
+
+  const insertAtCursor = (value: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) {
+      updateDraft("content", `${draft.content}${draft.content.endsWith("\n") ? "" : "\n"}${value}`);
+      return;
+    }
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const newContent = draft.content.slice(0, start) + value + draft.content.slice(end);
+    updateDraft("content", newContent);
+
+    requestAnimationFrame(() => {
+      textarea.focus();
+      const cursor = start + value.length;
+      textarea.setSelectionRange(cursor, cursor);
+    });
+  };
+
+  const uploadContentImages = async (event: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    if (!files.length) return;
+
+    const validFiles = files.filter((file) => !validateImageFile(file));
+    if (!validFiles.length) {
+      setStatusMessage("No valid images selected. Use jpg/png/webp/avif under size limit.");
+      event.target.value = "";
+      return;
+    }
+
+    try {
+      setIsUploadingContentImages(true);
+      const formData = new FormData();
+      validFiles.forEach((file) => formData.append("files", file));
+
+      const response = await secureApiFetch<ContentImageUploadResponse>(`${AUTHOR_BLOG_API}/content-images/upload`, {
+        method: "POST",
+        body: formData,
+        timeoutMs: 30000,
+      });
+
+      if (!response.ok) {
+        setStatusMessage(response.message || "Unable to upload content images.");
+        return;
+      }
+
+      const urls = response.data?.images || [];
+      if (!urls.length) {
+        setStatusMessage("No image URLs returned from upload.");
+        return;
+      }
+
+      const markdown = urls.map((url) => `\n![content image](${url})\n`).join("\n");
+      insertAtCursor(markdown);
+      setStatusMessage(`${urls.length} image(s) uploaded and inserted into content.`);
+    } catch {
+      setStatusMessage("Failed to upload content images.");
+    } finally {
+      setIsUploadingContentImages(false);
+      event.target.value = "";
+    }
   };
 
   const loadRemoteDrafts = useCallback(async () => {
@@ -622,6 +688,15 @@ const BlogWritePage = () => {
           className="hidden"
         />
 
+        <input
+          ref={contentImagesRef}
+          type="file"
+          accept={ALLOWED_IMAGE_TYPES.join(",")}
+          multiple
+          onChange={uploadContentImages}
+          className="hidden"
+        />
+
         <div className="mb-4 flex flex-wrap items-center gap-3 text-xs text-gray-500">
           <span className="rounded-full bg-gray-100 px-3 py-1">Words: {wordCount}</span>
           <span className="rounded-full bg-gray-100 px-3 py-1">Read time: {readMinutes} min</span>
@@ -668,6 +743,8 @@ const BlogWritePage = () => {
               onChangeContent={(value) => updateDraft("content", value)}
               onTabChange={setEditorTab}
               onSnippet={insertSnippet}
+              onUploadImages={() => contentImagesRef.current?.click()}
+              isUploadingImages={isUploadingContentImages}
             />
           </div>
 

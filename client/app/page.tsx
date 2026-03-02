@@ -3,7 +3,8 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { FaArrowRight } from "react-icons/fa";
+import { useRouter } from "next/navigation";
+import { FaArrowRight, FaSearch } from "react-icons/fa";
 import FeaturedPage from "@/Components/Home/FeaturedPage";
 import TrendingPage from "@/Components/Home/TrendingPage";
 import RecommandPage from "@/Components/Home/RecommandPage";
@@ -127,13 +128,24 @@ const sampleBlogs = [
 ];
 
 export default function HomePage() {
+  const router = useRouter();
   const { greeting, setGreeting } = useAuth();
   const [search, setSearch] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!search.trim()) return;
-    window.location.href = `/blog?search=${search}`;
+    const query = search.trim();
+    if (!query) return;
+
+    setIsSearching(true);
+    router.push(`/blog?search=${encodeURIComponent(query)}`);
+    setTimeout(() => setIsSearching(false), 400);
+  };
+
+  const quickSearch = (value: string) => {
+    setSearch(value);
+    router.push(`/blog?search=${encodeURIComponent(value)}`);
   };
 
   useEffect(() => {
@@ -187,6 +199,7 @@ export default function HomePage() {
                 onSubmit={handleSearch}
                 className="mt-6 flex items-center bg-white/80 px-4 py-3 rounded-full border border-gray-200 shadow-sm max-w-lg"
               >
+                <FaSearch className="text-gray-400 mr-2" />
                 <input
                   type="text"
                   placeholder="Search blogs, topics, or authors..."
@@ -194,13 +207,36 @@ export default function HomePage() {
                   onChange={(e) => setSearch(e.target.value)}
                   className="bg-transparent outline-none text-sm sm:text-base w-full"
                 />
+                {search.trim() && (
+                  <button
+                    type="button"
+                    onClick={() => setSearch("")}
+                    className="text-xs text-gray-500 hover:text-gray-700 mr-2"
+                  >
+                    Clear
+                  </button>
+                )}
                 <button
                   type="submit"
-                  className="ml-3 px-4 py-2 rounded-full bg-black text-white text-sm font-medium hover:bg-gray-800 transition"
+                  disabled={!search.trim() || isSearching}
+                  className="ml-1 px-4 py-2 rounded-full bg-black text-white text-sm font-medium hover:bg-gray-800 transition disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Search
+                  {isSearching ? "Searching..." : "Search"}
                 </button>
               </form>
+
+              <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                {["Technology", "Design", "Productivity"].map((topic) => (
+                  <button
+                    key={topic}
+                    type="button"
+                    onClick={() => quickSearch(topic)}
+                    className="rounded-full border border-gray-200 bg-white/70 px-3 py-1.5 text-gray-700 hover:bg-white"
+                  >
+                    {topic}
+                  </button>
+                ))}
+              </div>
 
               {/* CTA */}
               <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row gap-3 sm:gap-4">
