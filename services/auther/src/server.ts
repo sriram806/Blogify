@@ -40,7 +40,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 app.get('/', (req: Request, res: Response) => {
-    res.send('Auther Service is up and running on port number ' + PORT + '!');
+    res.send('Auther Services is up and running on port number ' + PORT + '!');
 })
 
 app.use(`/api/${apiVersion}/blog`, BlogRouter);

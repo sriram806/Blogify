@@ -68,33 +68,25 @@ export default function FeaturedAdvanced() {
       }
     });
 
-    tl.from(".featured-bg", {
-      scale: 1.2,
-      rotationZ: 2,
-      opacity: 0,
-      duration: 1.8,
-      ease: "power3.out"
-    })
-      .from(".featured-panel", {
-        x: -50,
-        opacity: 0,
-        duration: 1,
-        ease: "power3.out"
-      }, "-=1.4")
-      .from(".featured-text", {
-        y: 20,
-        opacity: 0,
-        duration: 0.8,
-        stagger: 0.1,
-        ease: "power2.out"
-      }, "-=1")
-      .from(".featured-cards", {
-        y: 80,
-        rotationX: 10,
-        opacity: 0,
-        duration: 1.2,
-        ease: "back.out(1.5)"
-      }, "-=0.8");
+    tl.fromTo(".featured-bg",
+      { scale: 1.2, rotationZ: 2, opacity: 0 },
+      { scale: 1, rotationZ: 0, opacity: 1, duration: 1.8, ease: "power3.out" }
+    )
+      .fromTo(".featured-panel",
+        { x: -50, opacity: 0 },
+        { x: 0, opacity: 1, duration: 1, ease: "power3.out" },
+        "-=1.4"
+      )
+      .fromTo(".featured-text",
+        { y: 20, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.8, stagger: 0.1, ease: "power2.out" },
+        "-=1"
+      )
+      .fromTo(".featured-cards",
+        { y: 80, rotationX: 10, opacity: 0 },
+        { y: 0, rotationX: 0, opacity: 1, duration: 1.2, ease: "back.out(1.5)" },
+        "-=0.8"
+      );
   }, { scope: container });
 
   useEffect(() => {

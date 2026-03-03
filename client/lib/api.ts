@@ -16,7 +16,8 @@ const parseJsonSafe = async <T>(response: Response): Promise<T | null> => {
 };
 
 export const getAuthorBlogApiBase = () => {
-  const apiBase = process.env.NEXT_PUBLIC_AUTHER_API_URL || "http://localhost:5001/api/v1/blog";
+  const rawApiBase = process.env.NEXT_PUBLIC_AUTHER_API_URL || "http://localhost:5001/api/v1/blog";
+  const apiBase = rawApiBase.replace(/\/api\/v1\/auther\/?$/i, "/api/v1/blog");
   const isProduction = process.env.NODE_ENV === "production";
 
   if (isProduction && apiBase.startsWith("http://")) {

@@ -99,27 +99,21 @@ export default function TrendingPage() {
         });
 
         // Header Entrance
-        tl.from(".trend-head", {
-            y: 50,
-            opacity: 0,
-            duration: 1,
-            stagger: 0.1,
-            ease: "power3.out"
-        });
+        tl.fromTo(".trend-head",
+            { y: 50, opacity: 0 },
+            { y: 0, opacity: 1, duration: 1, stagger: 0.1, ease: "power3.out" }
+        );
 
         // Masonry Cards Cinematic Pop-in
-        tl.from(".trend-card", {
-            y: 100,
-            z: -100,
-            rotationX: 10,
-            opacity: 0,
-            duration: 1.2,
-            stagger: {
-                amount: 0.8,
-                from: "random"
+        tl.fromTo(".trend-card",
+            { y: 100, z: -100, rotationX: 10, opacity: 0 },
+            {
+                y: 0, z: 0, rotationX: 0, opacity: 1, duration: 1.2,
+                stagger: { amount: 0.8, from: "random" },
+                ease: "back.out(1.5)"
             },
-            ease: "back.out(1.5)"
-        }, "-=0.6");
+            "-=0.6"
+        );
 
     }, { scope: container });
 

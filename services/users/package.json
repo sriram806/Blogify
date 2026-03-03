@@ -37,6 +37,7 @@
     "bcryptjs": "^3.0.3",
     "cloudinary": "^2.8.0",
     "concurrently": "^9.2.1",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "datauri": "^4.1.0",
     "dotenv": "^17.2.3",
@@ -54,7 +55,6 @@
   },
   "devDependencies": {
     "@types/cookie-parser": "^1.4.10",
-    "@types/jsonwebtoken": "^9.0.10",
-    "cookie-parser": "^1.4.7"
+    "@types/jsonwebtoken": "^9.0.10"
   }
 }

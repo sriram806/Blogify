@@ -9,12 +9,14 @@ interface CacheInvalidationMessage {
 
 export const startCacheConsumer = async () => {
     try {
+        const isCloud = process.env.RABBITMQ_HOST !== 'localhost';
         const connection = await amqp.connect({
-            protocol: 'amqp',
+            protocol: Number(process.env.RABBITMQ_PORT) === 5671 ? 'amqps' : 'amqp',
             hostname: process.env.RABBITMQ_HOST,
             port: Number(process.env.RABBITMQ_PORT),
             username: process.env.RABBITMQ_USER,
             password: process.env.RABBITMQ_PASSWORD,
+            vhost: isCloud ? process.env.RABBITMQ_USER : '/',
         });
 
         const channel = await connection.createChannel();
