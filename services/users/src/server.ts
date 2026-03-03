@@ -50,8 +50,6 @@ app.get("/", (req: Request, res: Response) => {
     res.send("User Service is up and running on port number " + PORT + "!");
 });
 
-app.use(`/api/${appVersion}/users`, UserRouter);
-
 let dbConnected = false;
 let dbConnectionPromise: Promise<void> | null = null;
 
@@ -81,6 +79,8 @@ app.use(async (_req: Request, res: Response, next: NextFunction) => {
         res.status(500).json({ success: false, message: "Database connection failed" });
     }
 });
+
+app.use(`/api/${appVersion}/users`, UserRouter);
 
 const startServer = async () => {
     try {
