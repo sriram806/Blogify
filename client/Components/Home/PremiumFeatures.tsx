@@ -4,130 +4,193 @@ import { useRef } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { FaLayerGroup, FaBolt, FaShieldAlt, FaChartPie } from "react-icons/fa";
+import { FaPenFancy, FaChartLine, FaRobot, FaPalette } from "react-icons/fa";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const premiumFeatures = [
+const features = [
     {
-        icon: <FaLayerGroup />,
-        title: "Advanced Layouts",
-        text: "Build stunning rich-text articles with an intuitive drag-and-drop editor and seamless media integration.",
-        color: "from-blue-500/20 to-cyan-500/20",
-        border: "group-hover:border-cyan-500/50"
+        icon: FaPenFancy,
+        title: "Distraction-Free Writing",
+        desc: "A beautifully minimal editor that lets you focus entirely on your words and ideas.",
+        color: "text-purple-400",
+        bg: "bg-purple-900/20",
+        glow: "bg-purple-500/10",
     },
     {
-        icon: <FaBolt />,
-        title: "Lightning Fast API",
-        text: "Experience sub-second load times powered by our highly optimized edge-caching infrastructure.",
-        color: "from-purple-500/20 to-fuchsia-500/20",
-        border: "group-hover:border-fuchsia-500/50"
+        icon: FaPalette,
+        title: "Premium Aesthetics",
+        desc: "Your content deserves a beautiful canvas. Customize layouts with tech-level polish.",
+        color: "text-cyan-400",
+        bg: "bg-cyan-900/20",
+        glow: "bg-cyan-500/10",
     },
     {
-        icon: <FaShieldAlt />,
-        title: "Enterprise Security",
-        text: "Your data is protected with military-grade encryption, automatic backups, and strict privacy controls.",
-        color: "from-emerald-500/20 to-teal-500/20",
-        border: "group-hover:border-emerald-500/50"
-    },
-    {
-        icon: <FaChartPie />,
+        icon: FaChartLine,
         title: "Deep Analytics",
-        text: "Understand your audience with real-time insights, traffic sources, and granular engagement metrics.",
-        color: "from-orange-500/20 to-amber-500/20",
-        border: "group-hover:border-orange-500/50"
+        desc: "Understand your audience with real-time, privacy-first data and visual insights.",
+        color: "text-green-400",
+        bg: "bg-green-900/20",
+        glow: "bg-green-500/10",
+    },
+    {
+        icon: FaRobot,
+        title: "AI Co-Pilot",
+        desc: "Enhance your workflow with smart generation, grammar checks, and title ideation.",
+        color: "text-rose-400",
+        bg: "bg-rose-900/20",
+        glow: "bg-rose-500/10",
     },
 ];
 
 export default function PremiumFeatures() {
     const container = useRef<HTMLDivElement>(null);
+    const trackRef = useRef<HTMLDivElement>(null);
 
     useGSAP(() => {
-        const tl = gsap.timeline({
+        // 1. Antigravity Header Entrance
+        gsap.from(".pf-ag-word", {
             scrollTrigger: {
                 trigger: container.current,
                 start: "top 75%",
+                toggleActions: "play none none reverse"
+            },
+            y: 80,
+            opacity: 0,
+            rotationX: -90,
+            duration: 1.2,
+            stagger: 0.05,
+            ease: "power3.out"
+        });
+
+        // 2. Horizontal Scroll Setup
+        if (!trackRef.current) return;
+
+        // Calculate total movement correctly based on desktop vs mobile
+        // Using xPercent: -100 * (features.length - 1) makes it pin and slide left perfectly
+        const tl = gsap.timeline({
+            scrollTrigger: {
+                trigger: container.current,
+                pin: true,
+                scrub: 1, // Smooth scrubbing
+                start: "top top",
+                end: () => `+=${trackRef.current?.offsetWidth || 2000}`,
             }
         });
 
-        // Antigravity Header Reveal
-        tl.from(".pf-ag-word", {
-            y: 80,
-            opacity: 0,
-            duration: 1,
-            stagger: 0.1,
-            ease: "back.out(1.7)"
-        })
-            .from(".pf-subtitle", {
-                y: 20,
-                opacity: 0,
-                duration: 0.8,
-                ease: "power2.out"
-            }, "-=0.5");
-
-        // 3D Glassmorphism Cards Stagger
-        gsap.from(".pf-card", {
-            scrollTrigger: {
-                trigger: ".pf-grid",
-                start: "top 80%",
-            },
-            y: 60,
-            rotationX: 45,
-            rotationY: 15,
-            z: -100,
-            opacity: 0,
-            duration: 1.2,
-            stagger: 0.2,
-            ease: "elastic.out(1, 0.75)",
-            transformPerspective: 1000,
+        tl.to(trackRef.current, {
+            xPercent: -100 * (features.length - 1) / features.length,
+            ease: "none",
         });
 
     }, { scope: container });
 
     return (
-        <section ref={container} className="relative w-full bg-black text-white py-20 sm:py-28 overflow-hidden">
+        <section ref={container} className="relative w-full h-screen overflow-hidden border-t border-gray-100 flex flex-col justify-center bg-gray-50">
 
-            {/* BACKGROUND GLOWS */}
-            <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/20 blur-3xl rounded-full pointer-events-none transform translate-x-1/2 -translate-y-1/2" />
-            <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-600/20 blur-3xl rounded-full pointer-events-none transform -translate-x-1/2 translate-y-1/2" />
+            {/* Subtle Animated Background */}
+            <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+                <div className="absolute top-[-10%] left-[-10%] w-[40vw] h-[40vw] bg-purple-500/5 blur-[120px] rounded-full mix-blend-multiply" />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[40vw] h-[40vw] bg-blue-500/5 blur-[120px] rounded-full mix-blend-multiply" />
+            </div>
 
-            <div className="max-w-7xl mx-auto px-5 sm:px-6 md:px-10 relative z-10">
 
-                {/* HEADER */}
-                <div className="text-center max-w-3xl mx-auto mb-16">
-                    <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight overflow-hidden flex flex-wrap justify-center gap-2 pb-2">
-                        {"Elevate Your Publishing Experience".split(" ").map((word, i) => (
-                            <span key={i} className="pf-ag-word inline-block">{word}</span>
-                        ))}
-                    </h2>
-                    <p className="pf-subtitle mt-6 text-gray-400 text-base sm:text-lg">
-                        Discover the powerful features that make Blogify the ultimate platform for modern creators and developers.
-                    </p>
+            <div className="absolute top-12 sm:top-20 left-0 w-full px-5 sm:px-10 z-20 text-center pointer-events-none flex flex-col items-center">
+
+                {/* Decorative SVG Flourish */}
+                <div className="mb-6 opacity-70 pf-ag-word">
+                    <svg
+                        width="220"
+                        height="45"
+                        viewBox="0 0 200 40"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="text-gray-400 drop-shadow-sm"
+                    >
+                        {/* Left Wing */}
+                        <path d="M85 30 Q70 28 60 20 Q75 30 85 30 Z" fill="currentColor" />
+                        <path d="M90 32 Q70 30 50 25 Q75 35 90 32 Z" fill="currentColor" />
+                        <path d="M95 34 Q70 34 40 32 Q75 38 95 34 Z" fill="currentColor" />
+                        <circle cx="98" cy="33" r="2" fill="currentColor" />
+
+                        {/* Right Wing */}
+                        <path d="M115 30 Q130 28 140 20 Q125 30 115 30 Z" fill="currentColor" />
+                        <path d="M110 32 Q130 30 150 25 Q125 35 110 32 Z" fill="currentColor" />
+                        <path d="M105 34 Q130 34 160 32 Q125 38 105 34 Z" fill="currentColor" />
+                        <circle cx="102" cy="33" r="2" fill="currentColor" />
+
+                        {/* Center Arc */}
+                        <path
+                            d="M90 20 A 10 10 0 0 1 110 20"
+                            stroke="currentColor"
+                            strokeWidth="1.5"
+                            fill="none"
+                        />
+
+                        {/* Horizontal Lines */}
+                        <line
+                            x1="10"
+                            y1="38"
+                            x2="85"
+                            y2="38"
+                            stroke="currentColor"
+                            strokeWidth="1"
+                            strokeOpacity="0.5"
+                        />
+                        <line
+                            x1="115"
+                            y1="38"
+                            x2="190"
+                            y2="38"
+                            stroke="currentColor"
+                            strokeWidth="1"
+                            strokeOpacity="0.5"
+                        />
+                    </svg>
                 </div>
 
-                {/* GRID */}
-                <div className="pf-grid grid sm:grid-cols-2 gap-6 sm:gap-8">
-                    {premiumFeatures.map((feature, idx) => (
-                        <div
-                            key={idx}
-                            className={`pf-card group relative p-8 sm:p-10 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-md overflow-hidden transition duration-500 hover:-translate-y-2 ${feature.border}`}
-                        >
-                            {/* Card Glow */}
-                            <div className={`absolute inset-0 bg-linear-to-br ${feature.color} opacity-0 group-hover:opacity-100 transition duration-700 pointer-events-none`} />
+                {/* Heading */}
+                <h2 className="text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight text-[#0F172A] overflow-hidden flex flex-wrap justify-center gap-2 sm:gap-3 pb-2 perspective-[1000px]">
+                    {"Unleash your creative potential".split(" ").map((word, i) => (
+                        <span key={i} className="pf-ag-word inline-block origin-bottom">
+                            {word}
+                        </span>
+                    ))}
+                </h2>
 
-                            <div className="relative z-10">
-                                <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center text-2xl text-white mb-6 border border-white/20">
-                                    {feature.icon}
+            </div>
+
+            <div className="w-full flex items-center h-full pt-20">
+                <div
+                    ref={trackRef}
+                    className="flex h-full min-h-[400px]"
+                    style={{ width: `${features.length * 100}vw` }}
+                >
+                    {features.map((feat, index) => (
+                        <div
+                            key={index}
+                            className="w-screen h-full flex flex-col items-center justify-center px-10 relative"
+                        >
+                            <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] sm:w-[500px] md:w-[600px] h-[400px] sm:h-[500px] md:h-[600px] rounded-full blur-[120px] mix-blend-multiply pointer-events-none -z-10 ${feat.glow.replace('/10', '/30')}`} />
+
+                            <div className="group relative bg-white border border-[#f0f0f0] px-8 py-12 rounded-[2rem] w-full max-w-xl text-center shadow-[0_15px_50px_rgba(0,0,0,0.04)] transition duration-700 hover:shadow-[0_25px_60px_rgba(0,0,0,0.08)]">
+
+                                {/* Inner pure white card for icon */}
+                                <div className="mx-auto w-16 h-16 mb-8 rounded-2xl bg-white flex items-center justify-center text-2xl shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-gray-50 transition-transform duration-500 group-hover:-translate-y-2 text-[#0F172A]">
+                                    <feat.icon />
                                 </div>
-                                <h3 className="text-xl sm:text-2xl font-bold mb-3">{feature.title}</h3>
-                                <p className="text-gray-400 leading-relaxed text-sm sm:text-base">
-                                    {feature.text}
+
+                                <h3 className="text-2xl sm:text-3xl text-[#0F172A] font-bold mb-4 tracking-tight">
+                                    {feat.title}
+                                </h3>
+
+                                <p className="text-sm sm:text-base text-gray-500 leading-relaxed max-w-sm mx-auto font-medium">
+                                    {feat.desc}
                                 </p>
                             </div>
                         </div>
                     ))}
                 </div>
-
             </div>
         </section>
     );

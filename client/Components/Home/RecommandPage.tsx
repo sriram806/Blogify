@@ -2,171 +2,269 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import React, { useRef } from "react";
+import React, { useRef, useState, useEffect } from "react";
+import { FaBookmark, FaRegBookmark } from "react-icons/fa";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { TextPlugin } from "gsap/TextPlugin";
 
-gsap.registerPlugin(ScrollTrigger);
+gsap.registerPlugin(ScrollTrigger, TextPlugin);
 
-const recommendations = [
+type RecommendedBlog = {
+  id: string;
+  title: string;
+  excerpt: string;
+  category: string;
+  publishedAt: string;
+  coverImage: string;
+  author: {
+    name: string;
+    image: string;
+  };
+  readTime: string;
+  isSaved?: boolean;
+};
+
+const recommendations: RecommendedBlog[] = [
   {
-    id: "coastal-escape-guide",
-    title: "The Ultimate Guide to Coastal Escapes in 2026",
-    excerpt:
-      "Discover serene beaches, hidden coves, and the best coastal destinations for a peaceful getaway.",
-    category: "Travel",
-    image: "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8VHJhdmVsfGVufDB8fDB8fHww",
+    id: "react-ai-interfaces",
+    title: "Building AI-Powered React Interfaces with Vercel AI SDK",
+    excerpt: "Learn how to seamlessly integrate streaming LLM responses into your React components for a next-gen user experience.",
+    category: "React + AI",
+    publishedAt: "Mar 7, 2026",
+    coverImage: "https://images.unsplash.com/photo-1677442136019-21780ecad995?q=80&w=1170&auto=format&fit=crop",
+    author: { name: "Sarah Drasner", image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150" },
+    readTime: "8 min read",
+    isSaved: true,
   },
   {
-    id: "life-by-the-ocean",
-    title: "Why Life by the Ocean Feels So Refreshing",
-    excerpt:
-      "Explore how ocean landscapes influence well-being, creativity, and a slower pace of life.",
-    category: "Ocean",
-    image: "https://plus.unsplash.com/premium_photo-1666286163385-abe05f0326c4?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NXx8T0NFQU58ZW58MHx8MHx8fDA%3D",
+    id: "nextjs-openai-streaming",
+    title: "Next.js & OpenAI: Mastering Streaming Chat UIs in 2026",
+    excerpt: "A deep dive into building ultra-fast chat interfaces utilizing React Server Components and edge runtimes.",
+    category: "Next.js",
+    publishedAt: "Mar 5, 2026",
+    coverImage: "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?q=80&w=1170&auto=format&fit=crop",
+    author: { name: "Lee Robinson", image: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=150" },
+    readTime: "6 min read",
+    isSaved: false,
   },
   {
-    id: "mountain-adventure-trails",
-    title: "Top Mountain Trails for Your Next Adventure",
-    excerpt:
-      "From beginner hikes to breathtaking summit routes, find the perfect mountain journey.",
-    category: "Mountains",
-    image: "https://images.unsplash.com/photo-1627855787845-ece96f1747b2?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTh8fE1PVU5BVElOU3xlbnwwfHwwfHx8MA%3D%3D",
-  },
+    id: "frontend-llm-integration",
+    title: "The Future of Frontend: Integrating Local LLMs in Browser",
+    excerpt: "Explore how WebGPU and WebAssembly are bringing powerful AI models directly to the client side without server costs.",
+    category: "AI",
+    publishedAt: "Mar 1, 2026",
+    coverImage: "https://plus.unsplash.com/premium_photo-1683120966127-14162cdd0935?q=80&w=1170&auto=format&fit=crop",
+    author: { name: "Guillermo Rauch", image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150" },
+    readTime: "10 min read",
+    isSaved: false,
+  }
 ];
 
 export default function RecommandPage() {
-  const featured = recommendations[0];
-  const side = recommendations.slice(1);
   const container = useRef<HTMLDivElement>(null);
+  const typeTarget = useRef<HTMLSpanElement>(null);
 
   useGSAP(() => {
+    // 1. Scene Entrance
     const tl = gsap.timeline({
       scrollTrigger: {
         trigger: container.current,
-        start: "top 80%",
-        end: "bottom 80%",
-        toggleActions: "play none none reverse",
+        start: "top 75%",
       }
     });
 
-    tl.from(".rec-header", {
-      y: 20,
+    tl.from(".rec-bg-glow", {
       opacity: 0,
-      duration: 0.8,
-      stagger: 0.15,
-      ease: "power3.out"
-    })
-      .from(".rec-featured", {
-        y: 40,
+      scale: 0.8,
+      duration: 2,
+      ease: "power2.out"
+    });
+
+    gsap.fromTo(".rec-card",
+      {
+        y: 100,
+        rotationY: 15,
+        z: -50,
         opacity: 0,
+      },
+      {
+        y: 0,
+        rotationY: 0,
+        z: 0,
+        opacity: 1,
+        stagger: 0.2,
+        duration: 1.5,
+        ease: "expo.out",
+        scrollTrigger: {
+          trigger: container.current,
+          start: "top 85%", // Start earlier for better mobile visibility
+          toggleActions: "play none none reverse",
+        }
+      }
+    );
+
+    // 2. Typing Effect (Simulating AI processing)
+    if (typeTarget.current) {
+      const typeTl = gsap.timeline({
+        scrollTrigger: {
+          trigger: container.current,
+          start: "top 60%",
+        }
+      });
+
+      // Simulate analyzing dots
+      typeTl.to(typeTarget.current, {
+        text: { value: "Analyzing profile..." },
         duration: 0.8,
-        ease: "power3.out"
-      }, "-=0.6")
-      .from(".rec-side", {
-        x: 30,
-        opacity: 0,
-        duration: 0.8,
-        stagger: 0.15,
-        ease: "power3.out"
-      }, "-=0.6")
-      .from(".rec-btn", {
-        y: 20,
-        opacity: 0,
-        duration: 0.6,
-        ease: "power2.out"
-      }, "-=0.2");
+        ease: "none",
+      })
+        .to(typeTarget.current, {
+          text: { value: "Matching content..." },
+          duration: 0.8,
+          delay: 0.2,
+          ease: "none",
+        })
+        .to(typeTarget.current, {
+          text: { value: "Recommended for you based on React + AI interests." },
+          duration: 1.5,
+          delay: 0.3,
+          ease: "none",
+        });
+    }
+
+    // 3. Scanner Line Effect on Cards
+    gsap.utils.toArray<HTMLElement>(".rec-card").forEach((card) => {
+      const scanner = card.querySelector(".ai-scanner");
+      if (scanner) {
+        // We use the card's height so the scanner line traverses the whole component
+        gsap.fromTo(scanner,
+          { y: 0 },
+          {
+            y: () => card.offsetHeight,
+            duration: 2.5,
+            ease: "none",
+            repeat: -1,
+            scrollTrigger: {
+              trigger: card,
+              start: "top 80%",
+            }
+          }
+        );
+      }
+    });
+
   }, { scope: container });
 
   return (
-    <section ref={container} className="w-full bg-linear-to-br from-gray-300 via-gray-100 to-gray-300 py-12 sm:py-14 md:py-16">
+    <section ref={container} className="relative w-full bg-white py-24 sm:py-32 overflow-hidden border-t border-gray-100">
 
-      {/* HEADER */}
-      <div className="max-w-7xl mx-auto px-5 sm:px-6 md:px-10 mb-8 sm:mb-10 md:mb-12">
-        <p className="rec-header uppercase tracking-[0.25em] text-[10px] sm:text-xs font-semibold text-gray-500 mb-3">
-          Recommended For You
-        </p>
+      {/* BACKGROUND GLOWS */}
+      <div className="rec-bg-glow absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-blue-500/10 blur-[150px] rounded-[100%] pointer-events-none mix-blend-multiply" />
 
-        <h1 className="rec-header text-xl sm:text-2xl md:text-4xl lg:text-5xl font-bold text-gray-900 max-w-3xl leading-tight">
-          Curated stories to inspire your next big idea
-        </h1>
-      </div>
+      <div className="max-w-7xl mx-auto px-5 sm:px-6 md:px-8 relative z-10">
 
-      {/* GRID LAYOUT */}
-      <div className="max-w-7xl mx-auto px-5 sm:px-6 md:px-10 grid gap-6 sm:gap-8 md:gap-8 lg:grid-cols-3">
-
-        {/* FEATURED CARD */}
-        <Link
-          href={`/blog/${featured.id}`}
-          className="rec-featured lg:col-span-2 relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl group"
-        >
-          <div className="relative w-full aspect-video sm:aspect-video md:aspect-16/8">
-            <Image
-              src={featured.image}
-              alt={featured.title}
-              fill
-              className="object-cover group-hover:scale-105 transition duration-700"
-            />
-
-            <div className="absolute inset-0 bg-linear-to-t from-black/50 via-black/20 to-transparent" />
-
-            <div className="absolute bottom-0 p-5 sm:p-6 md:p-8 text-white max-w-lg">
-              <span className="text-[10px] sm:text-xs uppercase tracking-widest text-white/80">
-                {featured.category}
+        {/* AI HEADER */}
+        <div className="mb-16 sm:mb-20">
+          <div className="flex items-center gap-3 mb-6 relative">
+            {/* Pulsing AI Indicator */}
+            <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 border border-blue-200 shadow-[0_0_15px_rgba(59,130,246,0.3)]">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-xl bg-blue-400 opacity-30"></span>
+              <svg className="w-5 h-5 text-blue-600 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-sm font-bold tracking-widest uppercase text-blue-600 flex items-center gap-2">
+                AI Match Engine
+                <span className="flex gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-bounce" style={{ animationDelay: "0ms" }}></span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-bounce" style={{ animationDelay: "150ms" }}></span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-bounce" style={{ animationDelay: "300ms" }}></span>
+                </span>
               </span>
-
-              <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold mt-2 leading-snug">
-                {featured.title}
-              </h2>
-
-              <p className="text-white/80 mt-2 text-xs sm:text-sm md:text-base">
-                {featured.excerpt}
-              </p>
+              <span className="text-xs text-gray-500 font-medium">Confidence Score: 98.4%</span>
             </div>
           </div>
-        </Link>
 
-        {/* SIDE CARDS */}
-        <div className="flex flex-col gap-6 sm:gap-8">
-          {side.map((item) => (
-            <Link
-              key={item.id}
-              href={`/blog/${item.id}`}
-              className="rec-side relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-md group"
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4 h-[80px] md:h-[100px] flex items-start sm:items-center">
+            <span ref={typeTarget} className="border-r-2 border-blue-500 pr-1 animate-pulse"></span>
+          </h2>
+        </div>
+
+        {/* HORIZONTAL CAROUSEL CARDS */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {recommendations.map((blog, i) => (
+            <div
+              key={blog.id}
+              className="rec-card group relative flex flex-col bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition duration-500 hover:border-blue-200 hover:shadow-[0_20px_40px_rgba(59,130,246,0.1)] hover:-translate-y-2"
             >
-              <div className="relative w-full aspect-video sm:aspect-16/8">
+
+              {/* AI Scanner Line */}
+              <div className="ai-scanner absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-0 group-hover:opacity-100 z-50 mix-blend-multiply shadow-[0_0_10px_rgba(59,130,246,0.8)] transition-opacity duration-300 pointer-events-none" />
+
+              {/* IMAGE HEADER */}
+              <Link href={`/blog/${blog.id}`} className="relative h-56 w-full overflow-hidden block">
                 <Image
-                  src={item.image}
-                  alt={item.title}
+                  src={blog.coverImage}
+                  alt={blog.title}
                   fill
-                  className="object-cover group-hover:scale-105 transition duration-700"
+                  className="object-cover transition duration-700 ease-out group-hover:scale-105 opacity-90 group-hover:opacity-100"
                 />
 
-                <div className="absolute inset-0 bg-linear-to-t from-black/75 via-black/30 to-transparent" />
+                {/* GRADIENT OVERLAY */}
+                <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent opacity-60 mix-blend-multiply" />
 
-                <div className="absolute bottom-0 p-4 sm:p-5 text-white">
-                  <span className="text-[10px] sm:text-xs uppercase tracking-widest text-white/80">
-                    {item.category}
+                {/* SAVE BUTTON */}
+                <button className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-white/90 backdrop-blur-md border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 hover:text-blue-600 transition shadow-sm">
+                  {blog.isSaved ? <FaBookmark className="text-blue-600" /> : <FaRegBookmark />}
+                </button>
+              </Link>
+
+              {/* CONTENT */}
+              <div className="flex flex-col flex-1 p-6 sm:p-8 -mt-6 z-10 bg-white relative rounded-t-[2rem]">
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="px-3 py-1 rounded-md bg-blue-50 border border-blue-100 text-blue-600 text-xs font-bold uppercase tracking-wider">
+                    {blog.category}
                   </span>
-
-                  <h3 className="text-sm sm:text-base md:text-lg font-semibold mt-1 leading-snug">
-                    {item.title}
-                  </h3>
+                  <span className="text-xs text-gray-500 font-medium">{blog.readTime}</span>
                 </div>
+
+                <Link href={`/blog/${blog.id}`} className="block mb-4">
+                  <h3 className="text-xl sm:text-2xl font-bold text-gray-900 leading-snug group-hover:text-blue-600 transition">
+                    {blog.title}
+                  </h3>
+                </Link>
+
+                <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed mb-8 flex-1">
+                  {blog.excerpt}
+                </p>
+
+                {/* AUTHOR FOOTER */}
+                <div className="flex justify-between items-center pt-6 border-t border-gray-100">
+                  <div className="flex items-center gap-3 relative">
+                    <div className="w-10 h-10 rounded-full group-hover:ring-2 ring-blue-500/30 transition">
+                      <Image
+                        src={blog.author.image}
+                        alt={blog.author.name}
+                        width={40} height={40}
+                        className="rounded-full object-cover"
+                      />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-900">{blog.author.name}</h4>
+                      <p className="text-xs text-gray-500">{blog.publishedAt}</p>
+                    </div>
+                  </div>
+                </div>
+
               </div>
-            </Link>
+            </div>
           ))}
         </div>
-      </div>
 
-      {/* FOOTER BUTTON */}
-      <div className="rec-btn text-center mt-10 sm:mt-12 md:mt-14 px-5">
-        <button className="px-6 sm:px-7 py-2.5 sm:py-3 rounded-full bg-black text-white text-sm sm:text-base font-semibold hover:bg-gray-800 transition">
-          Browse all recommendations →
-        </button>
       </div>
-
     </section>
   );
 }

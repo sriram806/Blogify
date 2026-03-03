@@ -4,6 +4,7 @@ import "./globals.css";
 import Header from "@/Components/Navbar/Header";
 import Footer from "@/Components/Footer/Footer";
 import { AuthProvider } from "@/Components/Auth/AuthProvider";
+import SmoothScroll from "@/Components/Utils/SmoothScroll";
 
 const geistSans = Geist({
   variable: "--font-sans",
@@ -60,9 +61,11 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >
         <AuthProvider>
-          <Header />
-          <main className="min-h-screen">{children}</main>
-          <Footer />
+          <SmoothScroll>
+            <Header />
+            <main className="min-h-screen">{children}</main>
+            <Footer />
+          </SmoothScroll>
         </AuthProvider>
       </body>
     </html>

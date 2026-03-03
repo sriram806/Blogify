@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import React, { useEffect, useMemo, useState, useRef } from "react";
+import { FaArrowRight } from "react-icons/fa";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -22,17 +23,15 @@ const blogs: FeaturedBlog[] = [
   {
     id: "future-of-ai-creativity",
     title: "The Future of AI in Creative Industries",
-    excerpt:
-      "Explore how AI tools are transforming writing, design, and filmmaking while redefining creativity.",
+    excerpt: "Explore how AI tools are transforming writing, design, and filmmaking while redefining creativity.",
     category: "Technology",
     publishedAt: "Mar 6, 2026",
-    coverImage: "https://images.unsplash.com/photo-1515378960530-7c0da6231fb1?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8Y29tcHV0ZXJ8ZW58MHx8MHx8fDA%3D",
+    coverImage: "https://images.unsplash.com/photo-1515378960530-7c0da6231fb1?w=600&auto=format&fit=crop",
   },
   {
     id: "global-street-food-journey",
     title: "A Global Journey Through Street Food Cultures",
-    excerpt:
-      "From Bangkok markets to Mexico City stalls, discover how street food reflects local identity.",
+    excerpt: "From Bangkok markets to Mexico City stalls, discover how street food reflects local identity.",
     category: "Food",
     publishedAt: "Mar 4, 2026",
     coverImage: "https://media.istockphoto.com/id/2176660544/photo/young-friends-talking-and-eating-taco-outdoors.webp?a=1&b=1&s=612x612&w=0&k=20&c=Z8sF62aev-MyTX8gTmnjWr3ZjEu9UwYOEei50034zro=",
@@ -40,20 +39,18 @@ const blogs: FeaturedBlog[] = [
   {
     id: "designing-for-human-experience",
     title: "Designing Digital Products for Human Experience",
-    excerpt:
-      "Why empathy-driven design is becoming the key to building meaningful digital products.",
+    excerpt: "Why empathy-driven design is becoming the key to building meaningful digital products.",
     category: "Design",
     publishedAt: "Mar 2, 2026",
-    coverImage: "https://images.unsplash.com/photo-1678164384735-819fdc7cdb97?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8N3x8aHVtYW4lMjBleHBlcmllbmNlfGVufDB8fDB8fHww",
+    coverImage: "https://images.unsplash.com/photo-1678164384735-819fdc7cdb97?w=600&auto=format&fit=crop",
   },
   {
     id: "modern-brand-storytelling",
     title: "Modern Brand Storytelling That Builds Trust",
-    excerpt:
-      "Learn how brands use authentic storytelling to connect with audiences in a noisy digital world.",
+    excerpt: "Learn how brands use authentic storytelling to connect with audiences in a noisy digital world.",
     category: "Business",
     publishedAt: "Feb 28, 2026",
-    coverImage: "https://images.unsplash.com/photo-1504151932400-72d4384f04b3?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTJ8fHN0b3J5JTIwdGVsbGluZ3xlbnwwfHwwfHx8MA%3D%3D",
+    coverImage: "https://images.unsplash.com/photo-1504151932400-72d4384f04b3?w=600&auto=format&fit=crop",
   },
 ];
 
@@ -71,37 +68,39 @@ export default function FeaturedAdvanced() {
       }
     });
 
-    tl.from(".featured-image", {
-      scale: 1.1,
+    tl.from(".featured-bg", {
+      scale: 1.2,
+      rotationZ: 2,
       opacity: 0,
-      duration: 1.2,
+      duration: 1.8,
       ease: "power3.out"
     })
-      .from(".featured-content", {
-        y: 30,
+      .from(".featured-panel", {
+        x: -50,
         opacity: 0,
-        duration: 0.8,
+        duration: 1,
         ease: "power3.out"
-      }, "-=0.8")
+      }, "-=1.4")
       .from(".featured-text", {
         y: 20,
         opacity: 0,
-        duration: 0.6,
+        duration: 0.8,
         stagger: 0.1,
         ease: "power2.out"
-      }, "-=0.6")
+      }, "-=1")
       .from(".featured-cards", {
-        y: 50,
+        y: 80,
+        rotationX: 10,
         opacity: 0,
-        duration: 0.8,
+        duration: 1.2,
         ease: "back.out(1.5)"
-      }, "-=0.4");
+      }, "-=0.8");
   }, { scope: container });
 
   useEffect(() => {
     const interval = setInterval(() => {
       setIndex((prev) => (prev + 1) % blogs.length);
-    }, 4000);
+    }, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -111,96 +110,88 @@ export default function FeaturedAdvanced() {
   );
 
   return (
-    <section ref={container} className="w-full flex flex-col lg:flex-row overflow-hidden">
+    <section ref={container} className="relative w-full bg-[#0B0F19] overflow-hidden">
 
-      {/* RIGHT IMAGE FIRST ON MOBILE */}
-      <div className="featured-image lg:w-1/2 w-full h-[55vh] sm:h-[60vh] lg:h-screen relative order-1 lg:order-2">
-        <Image
-          src="https://images.unsplash.com/photo-1579567761406-4684ee0c75b6?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-          alt="Featured hero"
-          fill
-          priority
-          className="object-cover"
-        />
+      {/* GLOBAL BACKGROUND - Split Screen */}
+      <div className="flex flex-col lg:flex-row w-full h-[80vh] min-h-[600px] lg:h-screen">
 
-        <div className="absolute inset-0 bg-linear-to-br from-black/50 via-black/40 to-black/30" />
+        {/* LEFT TEXT PANEL */}
+        <div className="featured-panel lg:w-1/2 w-full h-full flex flex-col items-center justify-center p-8 sm:p-12 lg:p-20 order-2 lg:order-1 relative z-10 border-r border-white/5 bg-[#0B0F19]/80 backdrop-blur-xl">
+          <div className="w-full max-w-lg mb-10">
+            <p className="featured-text text-xs uppercase tracking-[0.25em] font-bold text-cyan-400 mb-4 inline-block px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20">
+              Editorial Spotlight
+            </p>
 
-        <div className="featured-content relative z-10 h-full flex flex-col justify-center px-6 sm:px-10 lg:px-16 text-white max-w-xl">
-          <p className="uppercase tracking-[0.25em] text-xs font-semibold text-white/70 mb-4">
-            Editorial Spotlight
-          </p>
+            <h2 className="featured-text text-3xl sm:text-4xl md:text-5xl font-bold text-white leading-tight mb-4">
+              Handpicked stories you shouldn’t miss
+            </h2>
 
-          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold leading-tight mb-4">
-            Discover ideas that shape the future of tech & creativity
-          </h2>
+            <p className="featured-text text-gray-400 text-base sm:text-lg leading-relaxed mb-8">
+              Explore curated articles selected for their unique insights, striking creativity, and immense impact on the digital landscape.
+            </p>
 
-          <p className="text-white/80 text-sm sm:text-base md:text-lg leading-relaxed">
-            Explore curated articles from developers, designers, and founders.
-            Featured stories rotate automatically to keep inspiration flowing.
-          </p>
-        </div>
-      </div>
-
-      {/* LEFT CONTENT */}
-      <div className="lg:w-1/2 w-full flex flex-col items-center justify-center px-6 sm:px-10 lg:px-12 py-12 lg:py-0 order-2 lg:order-1">
-
-        {/* TEXT */}
-        <div className="w-full max-w-lg mb-8">
-          <p className="featured-text text-xs uppercase tracking-[0.25em] font-semibold text-gray-500 mb-2">
-            Featured
-          </p>
-
-          <h2 className="featured-text text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 leading-tight">
-            Handpicked stories you shouldn’t miss
-          </h2>
-
-          <p className="featured-text text-gray-600 text-sm sm:text-base mt-2">
-            Explore curated articles selected for their insights, creativity, and impact.
-          </p>
-        </div>
-
-        {/* STACKED CARDS */}
-        <div className="featured-cards relative w-full max-w-md sm:max-w-lg h-80 sm:h-95 lg:h-105">
-
-          {ordered.slice(0, 3).map((blog, i) => (
-            <Link
-              key={blog.id}
-              href={`/blog/${blog.id}`}
-              className={`absolute inset-0 rounded-3xl overflow-hidden shadow-xl transition-all duration-700
-              ${i === 0
-                  ? "z-30 scale-100 translate-y-0"
-                  : i === 1
-                    ? "z-20 scale-95 translate-y-5 opacity-80"
-                    : "z-10 scale-90 translate-y-10 opacity-60"
-                }`}
-            >
-              <div className="relative w-full h-full">
-                <Image
-                  src={blog.coverImage}
-                  alt={blog.title}
-                  fill
-                  className="object-cover"
-                />
-
-                <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/30 to-transparent" />
-
-                <div className="absolute bottom-0 p-4 sm:p-6 text-white">
-                  <span className="text-[10px] sm:text-xs uppercase tracking-widest text-white/80">
-                    {blog.category} • {blog.publishedAt}
-                  </span>
-
-                  <h3 className="text-sm sm:text-lg font-bold mt-1 leading-snug">
-                    {blog.title}
-                  </h3>
-
-                  <p className="text-xs sm:text-sm text-white/80 mt-1 line-clamp-2">
-                    {blog.excerpt}
-                  </p>
-                </div>
-              </div>
+            <Link href="/blog" className="featured-text group inline-flex items-center gap-2 text-white font-medium hover:text-cyan-400 transition">
+              Read the Editorial <FaArrowRight className="group-hover:translate-x-1 transition" />
             </Link>
-          ))}
+          </div>
+
+          {/* STACKED 3D CARDS */}
+          <div className="featured-cards relative w-full h-80 sm:h-96 w-full max-w-lg perspective-[1000px]">
+            {ordered.slice(0, 3).map((blog, i) => (
+              <Link
+                key={blog.id}
+                href={`/blog/${blog.id}`}
+                className={`absolute inset-0 rounded-3xl overflow-hidden shadow-[0_30px_60px_rgba(0,0,0,0.6)] border border-white/10 transition-all duration-1000 ease-[cubic-bezier(0.25,1,0.5,1)]
+                ${i === 0
+                    ? "z-30 scale-100 translate-y-0 rotate-0 opacity-100 hover:-translate-y-2 hover:shadow-[0_40px_80px_rgba(0,0,0,0.8)]"
+                    : i === 1
+                      ? "z-20 scale-[0.92] translate-y-6 opacity-70 blur-[1px]"
+                      : "z-10 scale-[0.84] translate-y-12 opacity-40 blur-[2px]"
+                  }`}
+              >
+                <div className="relative w-full h-full">
+                  <Image
+                    src={blog.coverImage}
+                    alt={blog.title}
+                    fill
+                    className="object-cover"
+                  />
+
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0B0F19] via-[#0B0F19]/60 to-transparent" />
+
+                  <div className="absolute bottom-0 p-6 text-white w-full">
+                    <span className="text-[10px] sm:text-xs uppercase tracking-widest text-cyan-400 font-semibold drop-shadow-md">
+                      {blog.category} • {blog.publishedAt}
+                    </span>
+
+                    <h3 className="text-lg sm:text-xl font-bold mt-2 leading-snug drop-shadow-lg">
+                      {blog.title}
+                    </h3>
+
+                    <p className="text-xs sm:text-sm text-gray-300 mt-2 line-clamp-2">
+                      {blog.excerpt}
+                    </p>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
         </div>
+
+        {/* RIGHT IMAGE SHOWCASE */}
+        <div className="lg:w-1/2 w-full h-[50vh] sm:h-[60vh] lg:h-full relative order-1 lg:order-2 overflow-hidden">
+          <div className="featured-bg absolute inset-0">
+            <Image
+              src="https://images.unsplash.com/photo-1579567761406-4684ee0c75b6?q=80&w=687&auto=format&fit=crop"
+              alt="Featured showcase"
+              fill
+              priority
+              className="object-cover"
+            />
+          </div>
+          <div className="absolute inset-0 bg-gradient-to-l from-transparent to-[#0B0F19]/90 lg:to-[#0B0F19]" />
+        </div>
+
       </div>
     </section>
   );

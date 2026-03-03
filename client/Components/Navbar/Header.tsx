@@ -118,11 +118,10 @@ const Header = () => {
                           <Link
                             key={item.name}
                             href={item.href}
-                            className={`inline-flex items-center rounded-full px-3 py-1.5 text-xs font-medium text-white transition duration-200 ${
-                              isActive
-                                ? "bg-linear-to-r from-sky-300 to-sky-600"
-                                : "bg-linear-to-r from-sky-300 to-sky-400 hover:from-sky-600 hover:to-sky-800"
-                            }`}
+                            className={`inline-flex items-center rounded-full px-3 py-1.5 text-xs font-medium text-white transition duration-200 ${isActive
+                              ? "bg-linear-to-r from-purple-500 to-pink-300"
+                              : "bg-linear-to-r from-purple-500 to-pink-300 hover:from-purple-600 hover:to-purple-800"
+                              }`}
                           >
                             Write
                           </Link>
