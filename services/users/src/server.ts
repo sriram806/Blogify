@@ -51,9 +51,40 @@ app.get("/", (req: Request, res: Response) => {
 });
 
 app.use(`/api/${appVersion}/users`, UserRouter);
+
+let dbConnected = false;
+let dbConnectionPromise: Promise<void> | null = null;
+
+const ensureDbConnection = async () => {
+    if (dbConnected) return;
+
+    if (!dbConnectionPromise) {
+        dbConnectionPromise = connectDB()
+            .then(() => {
+                dbConnected = true;
+            })
+            .catch((error) => {
+                dbConnectionPromise = null;
+                throw error;
+            });
+    }
+
+    await dbConnectionPromise;
+};
+
+app.use(async (_req: Request, res: Response, next: NextFunction) => {
+    try {
+        await ensureDbConnection();
+        next();
+    } catch (error) {
+        console.error("Database connection error:", error);
+        res.status(500).json({ success: false, message: "Database connection failed" });
+    }
+});
+
 const startServer = async () => {
     try {
-        await connectDB();
+        await ensureDbConnection();
 
         app.listen(PORT, () => {
             console.log(`User service is running on port -> http://localhost:${PORT}`);
@@ -64,4 +95,9 @@ const startServer = async () => {
     }
 };
 
-startServer();
+if (!process.env.VERCEL) {
+    startServer();
+}
+
+export default app;
+export { app };
