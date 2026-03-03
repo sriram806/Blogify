@@ -2,6 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import React, { useRef } from "react";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+gsap.registerPlugin(ScrollTrigger);
 
 const recommendations = [
   {
@@ -33,17 +39,56 @@ const recommendations = [
 export default function RecommandPage() {
   const featured = recommendations[0];
   const side = recommendations.slice(1);
+  const container = useRef<HTMLDivElement>(null);
+
+  useGSAP(() => {
+    const tl = gsap.timeline({
+      scrollTrigger: {
+        trigger: container.current,
+        start: "top 80%",
+        end: "bottom 80%",
+        toggleActions: "play none none reverse",
+      }
+    });
+
+    tl.from(".rec-header", {
+      y: 20,
+      opacity: 0,
+      duration: 0.8,
+      stagger: 0.15,
+      ease: "power3.out"
+    })
+      .from(".rec-featured", {
+        y: 40,
+        opacity: 0,
+        duration: 0.8,
+        ease: "power3.out"
+      }, "-=0.6")
+      .from(".rec-side", {
+        x: 30,
+        opacity: 0,
+        duration: 0.8,
+        stagger: 0.15,
+        ease: "power3.out"
+      }, "-=0.6")
+      .from(".rec-btn", {
+        y: 20,
+        opacity: 0,
+        duration: 0.6,
+        ease: "power2.out"
+      }, "-=0.2");
+  }, { scope: container });
 
   return (
-    <section className="w-full bg-linear-to-br from-gray-300 via-gray-100 to-gray-300 py-12 sm:py-14 md:py-16">
+    <section ref={container} className="w-full bg-linear-to-br from-gray-300 via-gray-100 to-gray-300 py-12 sm:py-14 md:py-16">
 
       {/* HEADER */}
       <div className="max-w-7xl mx-auto px-5 sm:px-6 md:px-10 mb-8 sm:mb-10 md:mb-12">
-        <p className="uppercase tracking-[0.25em] text-[10px] sm:text-xs font-semibold text-gray-500 mb-3">
+        <p className="rec-header uppercase tracking-[0.25em] text-[10px] sm:text-xs font-semibold text-gray-500 mb-3">
           Recommended For You
         </p>
 
-        <h1 className="text-xl sm:text-2xl md:text-4xl lg:text-5xl font-bold text-gray-900 max-w-3xl leading-tight">
+        <h1 className="rec-header text-xl sm:text-2xl md:text-4xl lg:text-5xl font-bold text-gray-900 max-w-3xl leading-tight">
           Curated stories to inspire your next big idea
         </h1>
       </div>
@@ -54,7 +99,7 @@ export default function RecommandPage() {
         {/* FEATURED CARD */}
         <Link
           href={`/blog/${featured.id}`}
-          className="lg:col-span-2 relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl group"
+          className="rec-featured lg:col-span-2 relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl group"
         >
           <div className="relative w-full aspect-video sm:aspect-video md:aspect-16/8">
             <Image
@@ -88,7 +133,7 @@ export default function RecommandPage() {
             <Link
               key={item.id}
               href={`/blog/${item.id}`}
-              className="relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-md group"
+              className="rec-side relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-md group"
             >
               <div className="relative w-full aspect-video sm:aspect-16/8">
                 <Image
@@ -116,7 +161,7 @@ export default function RecommandPage() {
       </div>
 
       {/* FOOTER BUTTON */}
-      <div className="text-center mt-10 sm:mt-12 md:mt-14 px-5">
+      <div className="rec-btn text-center mt-10 sm:mt-12 md:mt-14 px-5">
         <button className="px-6 sm:px-7 py-2.5 sm:py-3 rounded-full bg-black text-white text-sm sm:text-base font-semibold hover:bg-gray-800 transition">
           Browse all recommendations →
         </button>

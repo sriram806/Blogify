@@ -1,15 +1,20 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FaArrowRight, FaSearch } from "react-icons/fa";
 import FeaturedPage from "@/Components/Home/FeaturedPage";
 import TrendingPage from "@/Components/Home/TrendingPage";
+import PremiumFeatures from "@/Components/Home/PremiumFeatures";
+import Testimonials from "@/Components/Home/Testimonials";
 import RecommandPage from "@/Components/Home/RecommandPage";
 import NewsletterSection from "@/Components/Home/NewsLetter";
 import { useAuth } from "@/Components/Auth/AuthProvider";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
+
 
 // Mock data - replace with actual data from API
 const sampleBlogs = [
@@ -132,6 +137,69 @@ export default function HomePage() {
   const { greeting, setGreeting } = useAuth();
   const [search, setSearch] = useState("");
   const [isSearching, setIsSearching] = useState(false);
+  const container = useRef<HTMLDivElement>(null);
+
+  useGSAP(() => {
+    const tl = gsap.timeline({ defaults: { ease: "power3.out", duration: 0.8 } });
+
+    tl.from(".hero-badge", { y: 20, opacity: 0 })
+      .from(".home-ag-word", {
+        y: 80,
+        opacity: 0,
+        duration: 1,
+        stagger: 0.05,
+        ease: "back.out(2)"
+      }, "-=0.6")
+      .from(".hero-desc", { y: 20, opacity: 0 }, "-=0.6")
+      .from(".hero-search", { y: 20, opacity: 0 }, "-=0.6")
+      .from(".hero-topics", { y: 20, opacity: 0 }, "-=0.6")
+      .from(".hero-cta", { y: 20, opacity: 0 }, "-=0.6")
+      .from(".hero-stats", { y: 20, opacity: 0 }, "-=0.6");
+
+    gsap.from(".hero-image", {
+      scale: 0.9,
+      opacity: 0,
+      duration: 1.2,
+      ease: "power3.out",
+      delay: 0.2
+    });
+
+    gsap.from(".hero-floating-1", {
+      y: 50,
+      x: -20,
+      opacity: 0,
+      duration: 1,
+      ease: "back.out(1.7)",
+      delay: 0.8
+    });
+
+    gsap.to(".hero-floating-1", {
+      y: "-=15",
+      duration: 2,
+      yoyo: true,
+      repeat: -1,
+      ease: "sine.inOut",
+      delay: 1.8
+    });
+
+    gsap.from(".hero-floating-2", {
+      y: 50,
+      x: 20,
+      opacity: 0,
+      duration: 1,
+      ease: "back.out(1.7)",
+      delay: 1
+    });
+
+    gsap.to(".hero-floating-2", {
+      y: "-=15",
+      duration: 2.2,
+      yoyo: true,
+      repeat: -1,
+      ease: "sine.inOut",
+      delay: 2
+    });
+  }, { scope: container });
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -164,7 +232,7 @@ export default function HomePage() {
       )}
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden drop-shadow-sm">
+      <section ref={container} className="relative overflow-hidden drop-shadow-sm">
 
         {/* Background */}
         <div className="absolute inset-0 bg-linear-to-br from-white via-gray-50 to-gray-100" />
@@ -176,20 +244,21 @@ export default function HomePage() {
             <div>
 
               {/* Badge */}
-              <div className="inline-flex items-center gap-2 bg-black/5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium mb-5 sm:mb-6">
+              <div className="hero-badge inline-flex items-center gap-2 bg-black/5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium mb-5 sm:mb-6">
                 ✨ New articles every week
               </div>
 
               {/* Heading */}
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight tracking-tight">
-                Insights, stories, and ideas to
-                <span className="block text-gray-500">
-                  help you grow every day
-                </span>
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight tracking-tight flex flex-wrap gap-2 pb-2 overflow-hidden">
+                {"Insights, stories, and ideas to help you grow every day".split(" ").map((word, i) => (
+                  <span key={i} className={`home-ag-word inline-block ${i > 4 ? 'text-gray-500' : 'text-gray-900'}`}>
+                    {word}
+                  </span>
+                ))}
               </h1>
 
               {/* Description */}
-              <p className="mt-5 sm:mt-6 text-sm sm:text-base md:text-lg text-gray-600 max-w-xl">
+              <p className="hero-desc mt-5 sm:mt-6 text-sm sm:text-base md:text-lg text-gray-600 max-w-xl">
                 Discover curated articles on technology, design, productivity,
                 and personal growth. Learn from real experiences and practical insights.
               </p>
@@ -197,7 +266,7 @@ export default function HomePage() {
               {/* Search */}
               <form
                 onSubmit={handleSearch}
-                className="mt-6 flex items-center bg-white/80 px-4 py-3 rounded-full border border-gray-200 shadow-sm max-w-lg"
+                className="hero-search mt-6 flex items-center bg-white/80 px-4 py-3 rounded-full border border-gray-200 shadow-sm max-w-lg"
               >
                 <FaSearch className="text-gray-400 mr-2" />
                 <input
@@ -225,7 +294,7 @@ export default function HomePage() {
                 </button>
               </form>
 
-              <div className="mt-3 flex flex-wrap gap-2 text-xs">
+              <div className="hero-topics mt-3 flex flex-wrap gap-2 text-xs">
                 {["Technology", "Design", "Productivity"].map((topic) => (
                   <button
                     key={topic}
@@ -239,7 +308,7 @@ export default function HomePage() {
               </div>
 
               {/* CTA */}
-              <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row gap-3 sm:gap-4">
+              <div className="hero-cta mt-6 sm:mt-8 flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <Link
                   href="/blog"
                   className="inline-flex items-center justify-center gap-2 bg-black text-white px-5 sm:px-6 py-2.5 sm:py-3 rounded-full text-sm sm:text-base font-medium hover:bg-gray-800 transition"
@@ -257,7 +326,7 @@ export default function HomePage() {
               </div>
 
               {/* Stats */}
-              <div className="mt-8 sm:mt-10 flex flex-wrap gap-6 sm:gap-8 text-xs sm:text-sm text-gray-600">
+              <div className="hero-stats mt-8 sm:mt-10 flex flex-wrap gap-6 sm:gap-8 text-xs sm:text-sm text-gray-600">
                 <div>
                   <p className="text-xl sm:text-2xl font-semibold text-black">500+</p>
                   Articles
@@ -277,7 +346,7 @@ export default function HomePage() {
             <div className="relative">
 
               {/* Hero Image */}
-              <div className="relative w-full h-65 sm:h-80 md:h-95 lg:h-115 rounded-xl sm:rounded-2xl mt-28 overflow-hidden">
+              <div className="hero-image relative w-full h-65 sm:h-80 md:h-95 lg:h-115 rounded-xl sm:rounded-2xl mt-28 overflow-hidden">
                 <Image
                   src="/images/hero-blog.png"
                   alt="Blog Hero"
@@ -288,7 +357,7 @@ export default function HomePage() {
               </div>
 
               {/* Floating Card 1 */}
-              <div className="
+              <div className="hero-floating-1
   absolute top-3 sm:top-4 md:top-5 left-3 sm:left-4 md:left-5
   bg-white shadow-lg rounded-lg sm:rounded-xl
   p-2.5 sm:p-3 md:p-4
@@ -304,7 +373,7 @@ export default function HomePage() {
               </div>
 
               {/* Floating Card 2 */}
-              <div className="
+              <div className="hero-floating-2
   absolute bottom-3 sm:bottom-4 md:bottom-5 right-3 sm:right-4 md:right-5
   bg-white shadow-lg rounded-lg sm:rounded-xl
   p-2.5 sm:p-3 md:p-4
@@ -326,6 +395,8 @@ export default function HomePage() {
 
       <FeaturedPage />
       <TrendingPage />
+      <PremiumFeatures />
+      <Testimonials />
       <RecommandPage />
       <NewsletterSection />
     </>
