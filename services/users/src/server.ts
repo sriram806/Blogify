@@ -15,9 +15,11 @@ const allowedOrigins = ["http://localhost:3000",
     process.env.CLIENT_ORIGIN
 ].filter((origin): origin is string => Boolean(origin));
 
+const vercelPreviewPattern = /^https:\/\/blogify(?:-[a-z0-9-]+)?\.vercel\.app$/i;
+
 const corsOptions: CorsOptions = {
     origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin)) {
+        if (!origin || allowedOrigins.includes(origin) || vercelPreviewPattern.test(origin)) {
             callback(null, true);
             return;
         }
@@ -70,13 +72,14 @@ const ensureDbConnection = async () => {
     await dbConnectionPromise;
 };
 
-app.use(async (_req: Request, res: Response, next: NextFunction) => {
+app.use(`/api/${appVersion}/users`, async (_req: Request, res: Response, next: NextFunction) => {
     try {
         await ensureDbConnection();
         next();
-    } catch (error) {
+    } catch (error: any) {
         console.error("Database connection error:", error);
-        res.status(500).json({ success: false, message: "Database connection failed" });
+        const details = error?.message || "Unknown database connection error";
+        res.status(500).json({ success: false, message: `Database connection failed: ${details}` });
     }
 });
 
