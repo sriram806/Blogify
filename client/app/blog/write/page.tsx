@@ -25,9 +25,22 @@ import {
   PublishResponse,
   RemoteDraft,
 } from "@/Components/Write/write.types";
-import { fileToDataUrl, getReadMinutes, getWordCount, sanitizeFreeText, validateImageFile } from "@/Components/Write/write.utils";
+import {
+  composeBlogContentWithMetadata,
+  fileToDataUrl,
+  getReadMinutes,
+  getWordCount,
+  parseBlogContentMetadata,
+  sanitizeFreeText,
+  validateImageFile,
+} from "@/Components/Write/write.utils";
 
 const AUTHOR_BLOG_API = getAuthorBlogApiBase();
+
+type ToastState = {
+  message: string;
+  visible: boolean;
+};
 
 const BlogWritePage = () => {
   const [editIdParam, setEditIdParam] = useState("");
@@ -45,6 +58,7 @@ const BlogWritePage = () => {
   const [isUploadingContentImages, setIsUploadingContentImages] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<string>("");
   const [editingBlogId, setEditingBlogId] = useState<string | null>(null);
+  const [toast, setToast] = useState<ToastState>({ message: "", visible: false });
   const contentImagesRef = useRef<HTMLInputElement | null>(null);
   const hasLoadedEditDraftRef = useRef(false);
 
@@ -97,6 +111,14 @@ const BlogWritePage = () => {
   }, [coverImageFile]);
 
   useEffect(() => {
+    if (!toast.visible) return;
+    const timeout = setTimeout(() => {
+      setToast({ message: "", visible: false });
+    }, 2800);
+    return () => clearTimeout(timeout);
+  }, [toast.visible]);
+
+  useEffect(() => {
     if (!user) return;
 
     const fetchRemoteDrafts = async () => {
@@ -138,6 +160,7 @@ const BlogWritePage = () => {
       }
 
       hasLoadedEditDraftRef.current = true;
+      const parsedContent = parseBlogContentMetadata(response.blog?.content || "");
       setEditingBlogId(response.blog.id);
       setDraft((prev) => ({
         ...prev,
@@ -145,10 +168,12 @@ const BlogWritePage = () => {
         subtitle: prev.subtitle,
         excerpt: response.blog?.excerpt || "",
         category: response.blog?.category || "Technology",
-        content: response.blog?.content || "",
+        content: parsedContent.content,
         coverImageUrl: response.blog?.coverImage || "",
         coverImageDataUrl: "",
-        tags: response.blog?.tags || [],
+        tags: response.blog?.tags?.length ? response.blog.tags : parsedContent.tags,
+        visibility: parsedContent.visibility,
+        allowComments: parsedContent.allowComments,
       }));
       setCoverImageFile(null);
       setCoverPreview(response.blog.coverImage || "");
@@ -160,6 +185,16 @@ const BlogWritePage = () => {
 
   const updateDraft = <K extends keyof BlogDraft>(key: K, value: BlogDraft[K]) => {
     setDraft((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const resetEditorForm = () => {
+    setDraft(DEFAULT_DRAFT);
+    setTagInput("");
+    setCoverPreview("");
+    setCoverImageFile(null);
+    setActiveRemoteDraftId(null);
+    setLastSavedAt("");
+    localStorage.removeItem(STORAGE_KEY);
   };
 
   const addTag = (value: string) => {
@@ -342,22 +377,23 @@ const BlogWritePage = () => {
   }, [saveDraft]);
 
   const applyRemoteDraft = (remoteDraft: RemoteDraft) => {
+    const parsedContent = parseBlogContentMetadata(remoteDraft.blog_content || "");
     setDraft({
       title: remoteDraft.title || "",
       subtitle: remoteDraft.metadata?.subtitle || "",
       excerpt: remoteDraft.description || "",
       category: remoteDraft.category || "Technology",
-      content: remoteDraft.blog_content || "",
+      content: parsedContent.content,
       coverImageUrl: remoteDraft.metadata?.coverImageUrl || "",
       coverImageDataUrl: "",
-      tags: remoteDraft.metadata?.tags || [],
+      tags: remoteDraft.metadata?.tags?.length ? remoteDraft.metadata.tags : parsedContent.tags,
       seoTitle: remoteDraft.metadata?.seoTitle || "",
       seoDescription: remoteDraft.metadata?.seoDescription || "",
       seoKeywords: remoteDraft.metadata?.seoKeywords || "",
       status: remoteDraft.metadata?.status || "draft",
-      visibility: remoteDraft.metadata?.visibility || "public",
+      visibility: remoteDraft.metadata?.visibility || parsedContent.visibility,
       scheduledAt: remoteDraft.metadata?.scheduledAt || "",
-      allowComments: remoteDraft.metadata?.allowComments ?? true,
+      allowComments: remoteDraft.metadata?.allowComments ?? parsedContent.allowComments,
       featured: remoteDraft.metadata?.featured ?? false,
     });
 
@@ -490,7 +526,11 @@ const BlogWritePage = () => {
       }
 
       const description = draft.excerpt.trim() || draft.subtitle.trim() || draft.title.trim();
-      const contentWithMeta = `${draft.content}\n\n---\nTags: ${draft.tags.join(", ")}\nVisibility: ${draft.visibility}\nComments: ${draft.allowComments ? "enabled" : "disabled"}`;
+      const contentWithMeta = composeBlogContentWithMetadata(draft.content, {
+        tags: draft.tags,
+        visibility: draft.visibility,
+        allowComments: draft.allowComments,
+      });
 
       const formData = new FormData();
       formData.append("title", draft.title.trim());
@@ -521,10 +561,13 @@ const BlogWritePage = () => {
 
       if (editingBlogId) {
         setStatusMessage("Blog updated successfully.");
+        setToast({ message: "Blog updated successfully.", visible: true });
+        resetEditorForm();
+        setEditingBlogId(null);
       } else {
         setStatusMessage(`Blog published successfully (id: ${response.data?.blog?.id ?? "new"}).`);
-        setActiveRemoteDraftId(null);
-        localStorage.removeItem(STORAGE_KEY);
+        setToast({ message: "Blog published successfully.", visible: true });
+        resetEditorForm();
         await loadRemoteDrafts();
       }
     } catch (error) {
@@ -540,6 +583,11 @@ const BlogWritePage = () => {
 
   return (
     <main className="min-h-screen bg-gray-50">
+      {toast.visible && (
+        <div className="fixed right-4 top-20 z-50 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white shadow-lg">
+          {toast.message}
+        </div>
+      )}
       <section className="mx-auto w-full max-w-350 px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         <div className="sticky top-16 z-20 mb-6 rounded-2xl border border-gray-200 bg-white/95 p-4 sm:p-5 shadow-sm backdrop-blur">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { BlogDateRange, BlogFilterState, BlogSortBy } from "./blog.types";
 import { fetchSearchSuggestions, SearchSuggestion } from "./blog.api";
 import SearchSuggestions from "./SearchSuggestions";
+import { useRecentlyRead } from "@/hooks/useRecentlyRead";
 
 type BlogFiltersProps = {
   filters: BlogFilterState;
@@ -43,19 +44,21 @@ export default function BlogFilters({
   onChange,
   onReset,
 }: BlogFiltersProps) {
+  const { recentlyRead } = useRecentlyRead();
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchWrapperRef = useRef<HTMLDivElement>(null);
+  const quickInterestCategories = Array.from(new Set(recentlyRead.map((item) => item.category))).slice(0, 4);
 
-  // Debounced fetch whenever the search value changes
-  useEffect(() => {
+  const fetchSuggestionsDebounced = (query: string) => {
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
 
-    const q = filters.search.trim();
+    const q = query.trim();
     if (q.length < 2) {
       setSuggestions([]);
+      setSuggestionsLoading(false);
       setShowSuggestions(false);
       return;
     }
@@ -64,11 +67,16 @@ export default function BlogFilters({
     setShowSuggestions(true);
 
     debounceTimer.current = setTimeout(async () => {
-      const results = await fetchSearchSuggestions(q);
+      const recentCategories = Array.from(new Set(recentlyRead.map((item) => item.category))).slice(0, 6);
+      const recentTitles = recentlyRead.map((item) => item.title).slice(0, 4);
+      const results = await fetchSearchSuggestions(q, {
+        categories: recentCategories,
+        titles: recentTitles,
+      });
       setSuggestions(results);
       setSuggestionsLoading(false);
     }, 300);
-  }, [filters.search]);
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -98,13 +106,32 @@ export default function BlogFilters({
         {/* Search with Suggestions */}
         <div className="flex flex-col gap-2 text-sm text-gray-700">
           <span>Search</span>
+          {quickInterestCategories.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {quickInterestCategories.map((category) => (
+                <button
+                  key={category}
+                  type="button"
+                  onClick={() => onChange("category", category)}
+                  className="rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700 hover:bg-indigo-100 transition"
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+          )}
           <div ref={searchWrapperRef} className="relative">
             <input
               type="text"
               value={filters.search}
-              onChange={(e) => onChange("search", e.target.value)}
+              onChange={(e) => {
+                onChange("search", e.target.value);
+                fetchSuggestionsDebounced(e.target.value);
+              }}
               onFocus={() => {
-                if (filters.search.trim().length >= 2) setShowSuggestions(true);
+                if (filters.search.trim().length >= 2) {
+                  fetchSuggestionsDebounced(filters.search);
+                }
               }}
               placeholder="Title, excerpt, or keyword"
               className="w-full rounded-xl border border-gray-300 px-3 py-2.5 outline-none focus:ring-2 focus:ring-gray-300"
@@ -136,6 +163,8 @@ export default function BlogFilters({
             ))}
           </select>
         </label>
+
+        <p className="text-xs text-gray-500">Discover from short reads to deep dives (up to {maxAvailableReadMinutes} min available).</p>
 
         <label className="flex flex-col gap-2 text-sm text-gray-700">
           Author
@@ -196,4 +225,4 @@ export default function BlogFilters({
       </div>
     </section>
   );
-}
+}

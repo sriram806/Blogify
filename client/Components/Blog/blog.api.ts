@@ -611,6 +611,7 @@ export type SearchSuggestion = {
   slug: string;
   title: string;
   category: string;
+  score?: number;
 };
 
 type SearchSuggestionsResponse = {
@@ -619,11 +620,25 @@ type SearchSuggestionsResponse = {
   message?: string;
 };
 
-export const fetchSearchSuggestions = async (query: string): Promise<SearchSuggestion[]> => {
+export const fetchSearchSuggestions = async (
+  query: string,
+  context?: { categories?: string[]; titles?: string[] }
+): Promise<SearchSuggestion[]> => {
   if (!query || query.trim().length < 2) return [];
 
+  const params = new URLSearchParams({ q: query.trim() });
+  const contextCategories = (context?.categories || []).filter(Boolean).slice(0, 6);
+  const contextTitles = (context?.titles || []).filter(Boolean).slice(0, 4);
+
+  if (contextCategories.length > 0) {
+    params.set("contextCategories", contextCategories.join(","));
+  }
+  if (contextTitles.length > 0) {
+    params.set("contextTitles", contextTitles.join(","));
+  }
+
   const response = await secureApiFetch<SearchSuggestionsResponse>(
-    `${BLOG_READ_API}/search-suggestions?q=${encodeURIComponent(query.trim())}`,
+    `${BLOG_READ_API}/search-suggestions?${params.toString()}`,
     { method: "GET" }
   );
 
@@ -637,16 +652,40 @@ type RelatedBlogsResponse = {
   message?: string;
 };
 
-export const fetchRelatedBlogs = async (blogId: string): Promise<BlogItem[]> => {
+export const fetchRelatedBlogs = async (
+  blogId: string,
+  context?: { categories?: string[]; titles?: string[] }
+): Promise<BlogItem[]> => {
   if (!blogId) return [];
 
+  const params = new URLSearchParams();
+  const contextCategories = (context?.categories || []).filter(Boolean).slice(0, 6);
+  const contextTitles = (context?.titles || []).filter(Boolean).slice(0, 4);
+
+  if (contextCategories.length > 0) {
+    params.set("contextCategories", contextCategories.join(","));
+  }
+  if (contextTitles.length > 0) {
+    params.set("contextTitles", contextTitles.join(","));
+  }
+
+  const query = params.toString();
+
   const response = await secureApiFetch<RelatedBlogsResponse>(
-    `${BLOG_READ_API}/related/${encodeURIComponent(blogId)}`,
+    `${BLOG_READ_API}/related/${encodeURIComponent(blogId)}${query ? `?${query}` : ""}`,
     { method: "GET" }
   );
 
   if (!response.ok || !response.data?.blogs) return [];
 
   const mapped = response.data.blogs.map(mapRawBlogToItem);
-  return applyCachedAuthorDetails(mapped);
+  const hydrated = applyCachedAuthorDetails(mapped);
+
+  if (!contextCategories.length) return hydrated;
+
+  return [...hydrated].sort((a, b) => {
+    const aScore = (contextCategories.includes(a.category) ? 2 : 0) + a.likes * 0.05 + a.comments * 0.03;
+    const bScore = (contextCategories.includes(b.category) ? 2 : 0) + b.likes * 0.05 + b.comments * 0.03;
+    return bScore - aScore;
+  });
 };

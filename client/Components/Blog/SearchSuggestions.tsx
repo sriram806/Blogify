@@ -20,6 +20,13 @@ export default function SearchSuggestions({ suggestions, loading, query, onClose
     router.push(`/blog/${slug}`);
   };
 
+  const getMatchLabel = (score?: number) => {
+    if (!score || score <= 0) return "Match";
+    if (score >= 0.85) return "High match";
+    if (score >= 0.6) return "Good match";
+    return "Relevant";
+  };
+
   return (
     <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white rounded-2xl border border-gray-200 shadow-xl overflow-hidden">
       {loading ? (
@@ -60,6 +67,9 @@ export default function SearchSuggestions({ suggestions, loading, query, onClose
                 </span>
                 <span className="shrink-0 text-xs font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
                   {s.category}
+                </span>
+                <span className="shrink-0 text-[10px] font-medium bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full">
+                  {getMatchLabel(s.score)}
                 </span>
               </button>
             </li>

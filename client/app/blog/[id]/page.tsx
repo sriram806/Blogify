@@ -3,11 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { FaArrowLeft, FaComment, FaEdit, FaEye, FaHeart, FaShare, FaTrash } from "react-icons/fa";
-import BlogRowCard from "@/Components/Blog/BlogRowCard";
 import ReactMarkdown from "react-markdown";
-import { BlogDetail, BlogItem } from "@/Components/Blog/blog.types";
+import { BlogDetail } from "@/Components/Blog/blog.types";
+import { parseBlogContentMetadata } from "@/Components/Write/write.utils";
 import { addCommentToBlog,
   buildAuthorProfilePath,
   BlogCommentItem,
@@ -61,7 +61,7 @@ export default function BlogDetailPage() {
       // Track this blog in recently read history
       recordView({
         id: loadedBlog.id,
-        slug: loadedBlog.slug,
+        slug: loadedBlog.slug || loadedBlog.id,
         title: loadedBlog.title,
         category: loadedBlog.category,
         coverImage: loadedBlog.coverImage,
@@ -151,6 +151,7 @@ export default function BlogDetailPage() {
 
   const displayedLikes = blog?.likes || 0;
   const displayedComments = comments.length;
+  const parsedContent = parseBlogContentMetadata(blog?.content || "");
 
   const handleDeleteBlog = async () => {
     if (!blog) return;
@@ -338,10 +339,25 @@ export default function BlogDetailPage() {
             />
           </div>
 
-          <div className="prose prose-lg max-w-none mb-12 text-gray-700">
-            {blog.content ? (
-              <ReactMarkdown>
-                {blog.content}
+          <div className="mb-12 text-gray-700">
+            {parsedContent.content ? (
+              <ReactMarkdown
+                components={{
+                  h1: ({ ...props }) => <h1 className="mt-7 mb-3 text-3xl font-bold text-gray-900" {...props} />,
+                  h2: ({ ...props }) => <h2 className="mt-6 mb-3 text-2xl font-semibold text-gray-900" {...props} />,
+                  h3: ({ ...props }) => <h3 className="mt-5 mb-2 text-xl font-semibold text-gray-900" {...props} />,
+                  p: ({ ...props }) => <p className="mb-4 leading-8 text-[18px] text-gray-700" {...props} />,
+                  strong: ({ ...props }) => <strong className="font-bold text-gray-900" {...props} />,
+                  em: ({ ...props }) => <em className="italic text-gray-800" {...props} />,
+                  ul: ({ ...props }) => <ul className="mb-4 list-disc pl-6 space-y-1 text-[18px] text-gray-700" {...props} />,
+                  ol: ({ ...props }) => <ol className="mb-4 list-decimal pl-6 space-y-1 text-[18px] text-gray-700" {...props} />,
+                  li: ({ ...props }) => <li className="leading-8 marker:text-gray-500" {...props} />,
+                  blockquote: ({ ...props }) => <blockquote className="mb-4 border-l-4 border-gray-300 pl-4 text-gray-700 italic" {...props} />,
+                  a: ({ ...props }) => <a className="font-medium text-gray-900 underline underline-offset-4 hover:text-gray-700" {...props} />,
+                  code: ({ ...props }) => <code className="rounded-md bg-gray-100 px-1 py-0.5 text-gray-900" {...props} />,
+                }}
+              >
+                {parsedContent.content}
               </ReactMarkdown>
             ) : (
               <p className="text-gray-600">No content available for this blog.</p>
@@ -351,7 +367,7 @@ export default function BlogDetailPage() {
           <div className="py-6 mb-8 border-t border-b border-gray-200">
             <p className="text-sm text-gray-600 mb-3">Tags</p>
             <div className="flex flex-wrap gap-2">
-              {(blog.tags || []).map((tag) => (
+              {((blog.tags && blog.tags.length > 0 ? blog.tags : parsedContent.tags) || []).map((tag) => (
                 <Link
                   key={tag}
                   href={`/blog?search=${tag}`}

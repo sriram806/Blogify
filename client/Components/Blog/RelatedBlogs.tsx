@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { BlogItem } from "./blog.types";
-import { fetchRelatedBlogs, mapRawBlogToItem } from "./blog.api";
+import { fetchRelatedBlogs } from "./blog.api";
+import { useRecentlyRead } from "@/hooks/useRecentlyRead";
 
 interface Props {
   blogId: string;
@@ -27,13 +28,20 @@ const SkeletonCard = () => (
 );
 
 export default function RelatedBlogs({ blogId, currentSlug }: Props) {
+  const { recentlyRead } = useRecentlyRead();
   const [blogs, setBlogs] = useState<BlogItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const hasPersonalizationContext = recentlyRead.length > 0;
 
   useEffect(() => {
     if (!blogId) return;
-    setLoading(true);
-    fetchRelatedBlogs(blogId).then((results) => {
+    const recentCategories = Array.from(new Set(recentlyRead.map((item) => item.category))).slice(0, 6);
+    const recentTitles = recentlyRead.map((item) => item.title).slice(0, 4);
+
+    fetchRelatedBlogs(blogId, {
+      categories: recentCategories,
+      titles: recentTitles,
+    }).then((results) => {
       // Extra client-side safety: exclude current blog
       const filtered = currentSlug
         ? results.filter((b) => b.slug !== currentSlug)
@@ -41,7 +49,7 @@ export default function RelatedBlogs({ blogId, currentSlug }: Props) {
       setBlogs(filtered.slice(0, 3));
       setLoading(false);
     });
-  }, [blogId, currentSlug]);
+  }, [blogId, currentSlug, recentlyRead]);
 
   if (!loading && blogs.length === 0) return null;
 
@@ -50,6 +58,9 @@ export default function RelatedBlogs({ blogId, currentSlug }: Props) {
       <div className="flex items-center gap-3 mb-6">
         <div className="flex-1 h-px bg-gray-200" />
         <h2 className="text-2xl font-bold text-gray-900 shrink-0">You might also like</h2>
+        {hasPersonalizationContext && (
+          <span className="shrink-0 rounded-full bg-indigo-50 px-2 py-1 text-[10px] font-medium text-indigo-700">Personalized</span>
+        )}
         <div className="flex-1 h-px bg-gray-200" />
       </div>
 
@@ -91,7 +102,7 @@ export default function RelatedBlogs({ blogId, currentSlug }: Props) {
                         height={22}
                         className="rounded-full object-cover w-5 h-5"
                       />
-                      <span className="text-xs text-gray-600 truncate max-w-[90px]">{blog.author}</span>
+                      <span className="text-xs text-gray-600 truncate max-w-22.5">{blog.author}</span>
                     </div>
                     <span className="text-xs text-gray-400 shrink-0">{blog.readMinutes} min read</span>
                   </div>

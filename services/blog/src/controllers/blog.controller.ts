@@ -3,6 +3,13 @@ import axios from "axios";
 import { sql } from "../config/db.js";
 import redisClient from "../config/redisDB.js";
 
+const parseCsvParam = (value?: string) =>
+    (value || "")
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean)
+        .slice(0, 8);
+
 // Ensure pg_trgm extension is available (idempotent)
 const ensureTrgm = async () => {
     try {
@@ -216,11 +223,13 @@ export const getBlogBySlug = async (req: Request, res: Response) => {
 export const getSearchSuggestions = async (req: Request, res: Response) => {
     try {
         const q = ((req.query.q as string) || "").trim();
+        const contextCategories = parseCsvParam(req.query.contextCategories as string | undefined);
+        const contextTitles = parseCsvParam(req.query.contextTitles as string | undefined);
         if (q.length < 2) {
             return res.status(200).json({ success: true, suggestions: [] });
         }
 
-        const cacheKey = `suggest:${q.toLowerCase()}`;
+        const cacheKey = `suggest:${q.toLowerCase()}:${contextCategories.join("|")}:${contextTitles.join("|")}`;
         try {
             const cached = await redisClient.get(cacheKey);
             if (cached) {
@@ -230,7 +239,9 @@ export const getSearchSuggestions = async (req: Request, res: Response) => {
             console.warn("Redis GET error (suggest):", err.message);
         }
 
-        // Use pg_trgm word_similarity for typo-tolerant matching; fall back to ILIKE if trgm unavailable
+        const titleSeed = contextTitles[0] || q;
+
+        // Use pg_trgm word_similarity + engagement + personalization boosts
         let suggestions;
         try {
             suggestions = await sql`
@@ -238,28 +249,48 @@ export const getSearchSuggestions = async (req: Request, res: Response) => {
                     b.slug,
                     b.title,
                     b.category,
-                    GREATEST(
-                        word_similarity(${q}, b.title),
-                        word_similarity(${q}, b.description)
+                    (
+                        GREATEST(word_similarity(${q}, b.title), word_similarity(${q}, b.description)) * 0.65
+                        + LEAST((COALESCE(s.like_count, 0)::float / 40.0), 1.0) * 0.2
+                        + LEAST((COALESCE(c.comment_count, 0)::float / 25.0), 1.0) * 0.1
+                        + CASE WHEN b.category = ANY(${contextCategories}::text[]) THEN 0.15 ELSE 0 END
+                        + CASE WHEN word_similarity(${titleSeed}, b.title) > 0.2 THEN 0.1 ELSE 0 END
                     ) AS score
                 FROM blogs b
+                LEFT JOIN (
+                    SELECT blogid, COUNT(*)::int AS comment_count FROM comments GROUP BY blogid
+                ) c ON c.blogid = b.id::text
+                LEFT JOIN (
+                    SELECT blogid, COUNT(*)::int AS like_count FROM savedblogs GROUP BY blogid
+                ) s ON s.blogid = b.id::text
                 WHERE
                     b.title ILIKE '%' || ${q} || '%'
                     OR b.description ILIKE '%' || ${q} || '%'
                     OR word_similarity(${q}, b.title) > 0.2
                     OR word_similarity(${q}, b.description) > 0.15
-                ORDER BY score DESC, b.created_at DESC
-                LIMIT 7;
+                ORDER BY score DESC, COALESCE(s.like_count,0) DESC, b.created_at DESC
+                LIMIT 9;
             `;
         } catch {
-            // pg_trgm not available — plain ILIKE fallback
+            // pg_trgm not available — ILIKE + engagement + category boost fallback
             suggestions = await sql`
-                SELECT b.slug, b.title, b.category
+                SELECT
+                    b.slug,
+                    b.title,
+                    b.category,
+                    (
+                        CASE WHEN b.title ILIKE ${q + "%"} THEN 0.6 ELSE 0 END
+                        + CASE WHEN b.category = ANY(${contextCategories}::text[]) THEN 0.2 ELSE 0 END
+                        + LEAST((COALESCE(s.like_count, 0)::float / 40.0), 1.0) * 0.2
+                    ) AS score
                 FROM blogs b
+                LEFT JOIN (
+                    SELECT blogid, COUNT(*)::int AS like_count FROM savedblogs GROUP BY blogid
+                ) s ON s.blogid = b.id::text
                 WHERE b.title ILIKE '%' || ${q} || '%'
                    OR b.description ILIKE '%' || ${q} || '%'
-                ORDER BY b.created_at DESC
-                LIMIT 7;
+                ORDER BY score DESC, COALESCE(s.like_count,0) DESC, b.created_at DESC
+                LIMIT 9;
             `;
         }
 
@@ -267,6 +298,7 @@ export const getSearchSuggestions = async (req: Request, res: Response) => {
             slug: r.slug,
             title: r.title,
             category: r.category,
+            score: Number(r.score || 0),
         }));
 
         try {
@@ -284,9 +316,11 @@ export const getSearchSuggestions = async (req: Request, res: Response) => {
 export const getRelatedBlogs = async (req: Request, res: Response) => {
     try {
         const { blogId } = req.params;
+        const contextCategories = parseCsvParam(req.query.contextCategories as string | undefined);
+        const contextTitles = parseCsvParam(req.query.contextTitles as string | undefined);
         if (!blogId) return res.status(400).json({ success: false, message: "blogId is required" });
 
-        const cacheKey = `related:${blogId}`;
+        const cacheKey = `related:${blogId}:${contextCategories.join("|")}:${contextTitles.join("|")}`;
         try {
             const cached = await redisClient.get(cacheKey);
             if (cached) {
@@ -309,7 +343,9 @@ export const getRelatedBlogs = async (req: Request, res: Response) => {
 
         const src = sourceBlog[0] as { id: any; slug: string; title: string; description: string; category: string };
 
-        // Multi-signal scoring query
+        const titleSeed = contextTitles[0] || src.title;
+
+        // Multi-signal scoring query + personalization from reader context
         let related;
         try {
             related = await sql`
@@ -327,7 +363,9 @@ export const getRelatedBlogs = async (req: Request, res: Response) => {
                     0::int AS views,
                     (
                         CASE WHEN b.category = ${src.category} THEN 5 ELSE 0 END
+                        + CASE WHEN b.category = ANY(${contextCategories}::text[]) THEN 3 ELSE 0 END
                         + CASE WHEN word_similarity(${src.title}, b.title) > 0.15 THEN 3 ELSE 0 END
+                        + CASE WHEN word_similarity(${titleSeed}, b.title) > 0.15 THEN 2 ELSE 0 END
                         + CASE WHEN word_similarity(${src.description}, b.description) > 0.1 THEN 2 ELSE 0 END
                         + CASE WHEN (COALESCE(s.like_count,0) + COALESCE(c.comment_count,0)) > 0 THEN 1 ELSE 0 END
                     ) AS relevance_score
@@ -340,18 +378,23 @@ export const getRelatedBlogs = async (req: Request, res: Response) => {
                 ) s ON s.blogid = b.id::text
                 WHERE b.id::text <> ${String(src.id)}
                   AND b.slug <> ${src.slug}
-                ORDER BY relevance_score DESC, likes DESC, b.created_at DESC
-                LIMIT 4;
+                ORDER BY relevance_score DESC, likes DESC, comments DESC, b.created_at DESC
+                LIMIT 6;
             `;
         } catch {
-            // pg_trgm not available — fallback to category match only
+            // pg_trgm not available — fallback with category + engagement + context category
             related = await sql`
                 SELECT
                     b.id, b.slug, b.title, b.description, b.category,
                     b.author, b.image_url, b.created_at,
                     COALESCE(c.comment_count, 0)::int AS comments,
                     COALESCE(s.like_count, 0)::int AS likes,
-                    0::int AS views
+                    0::int AS views,
+                    (
+                        CASE WHEN b.category = ${src.category} THEN 3 ELSE 0 END
+                        + CASE WHEN b.category = ANY(${contextCategories}::text[]) THEN 2 ELSE 0 END
+                        + CASE WHEN (COALESCE(s.like_count,0) + COALESCE(c.comment_count,0)) > 0 THEN 1 ELSE 0 END
+                    ) AS relevance_score
                 FROM blogs b
                 LEFT JOIN (
                     SELECT blogid, COUNT(*)::int AS comment_count FROM comments GROUP BY blogid
@@ -359,10 +402,9 @@ export const getRelatedBlogs = async (req: Request, res: Response) => {
                 LEFT JOIN (
                     SELECT blogid, COUNT(*)::int AS like_count FROM savedblogs GROUP BY blogid
                 ) s ON s.blogid = b.id::text
-                WHERE b.category = ${src.category}
-                  AND b.id::text <> ${String(src.id)}
-                ORDER BY likes DESC, b.created_at DESC
-                LIMIT 4;
+                WHERE b.id::text <> ${String(src.id)}
+                ORDER BY relevance_score DESC, likes DESC, comments DESC, b.created_at DESC
+                LIMIT 6;
             `;
         }
 
