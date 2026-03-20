@@ -1,12 +1,10 @@
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { NextFunction, Request, Response } from "express";
 
-
 declare global {
     namespace Express {
         interface Request {
-            tokenSource?: "cookie" | "header" | "query" | "none";
-            user?: { id: string }; // Add this line
+            user?: { id: string };
         }
     }
 }
@@ -15,89 +13,27 @@ interface DecodedToken extends JwtPayload {
     id: string;
 }
 
-const extractToken = (
-    req: Request
-): { token: string | null; source: Request["tokenSource"] } => {
-    if (req.cookies?.token) {
-        return { token: req.cookies.token as string, source: "cookie" };
+const isAuthenticated = (req: Request, res: Response, next: NextFunction): void => {
+    const token =
+        req.cookies?.token ||
+        req.headers.authorization?.split(" ")[1] ||
+        req.query.token;
+
+    if (!token) {
+        res.status(401).json({ success: false, message: "Access denied. No token provided." });
+        return;
     }
 
-    const authHeader = req.headers.authorization;
-    if (authHeader?.startsWith("Bearer ")) {
-        return { token: authHeader.split(" ")[1], source: "header" };
-    }
-
-    if (typeof req.query.token === "string") {
-        return { token: req.query.token, source: "query" };
-    }
-
-    return { token: null, source: "none" };
-};
-
-const maskToken = (token: string | null): string => {
-    if (!token) return "null";
-    return token.length > 10
-        ? `${token.slice(0, 6)}...${token.slice(-6)}`
-        : token;
-};
-
-const isAuthenticated = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-): Promise<void> => {
     try {
-        const { token, source } = extractToken(req);
-
-        console.log("------ AUTH CHECK START ------");
-        console.log("Request Path:", req.originalUrl);
-        console.log("Token Source:", source);
-        console.log("Masked Token:", maskToken(token));
-
-        if (!token) {
-            console.log("❌ No token provided");
-            console.log("------ AUTH CHECK END ------");
-            res
-                .status(401)
-                .json({ success: false, message: "Access denied. No token provided." });
-            return;
-        }
-
-        try {
-            const decoded = jwt.verify(
-                token,
-                process.env.JWT_SECRET as string
-            ) as unknown as DecodedToken;
-
-            console.log("✔ Token verified. User ID:", decoded.id);
-
-            // ADD THIS LINE:
-            req.user = { id: decoded.id };
-
-        } catch (err: any) {
-            console.error("❌ JWT Error:", err.name);
-
-            const message =
-                err.name === "TokenExpiredError" ? "Token expired. Please login again." : err.name === "JsonWebTokenError" ? "Invalid token. Please login again." : "Unauthorized access.";
-
-            console.log("------ AUTH CHECK END ------");
-            res.status(401).json({ success: false, message });
-            return;
-        }
-
-        req.tokenSource = source;
-
-        console.log("✔ Authenticated");
-        console.log("------ AUTH CHECK END ------");
-
+        const decoded = jwt.verify(token as string, process.env.JWT_SECRET as string) as DecodedToken;
+        req.user = { id: decoded.id };
         next();
-    } catch (error) {
-        console.error("🔥 Auth middleware error:", error);
-        console.log("------ AUTH CHECK END (ERROR) ------");
-
-        res
-            .status(500)
-            .json({ success: false, message: "Internal server error during authentication." });
+    } catch (err: any) {
+        const message =
+            err.name === "TokenExpiredError"
+                ? "Token expired. Please login again."
+                : "Invalid token. Please login again.";
+        res.status(401).json({ success: false, message });
     }
 };
 

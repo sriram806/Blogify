@@ -2,7 +2,14 @@ type ApiRequestOptions = Omit<RequestInit, "credentials"> & {
   timeoutMs?: number;
 };
 
+export const AUTH_TOKEN_KEY = "blogify.auth.token";
+
 const DEFAULT_TIMEOUT_MS = 12000;
+
+const getStoredAuthToken = () => {
+  if (typeof window === "undefined") return "";
+  return localStorage.getItem(AUTH_TOKEN_KEY) || "";
+};
 
 const parseJsonSafe = async <T>(response: Response): Promise<T | null> => {
   const contentType = response.headers.get("content-type") || "";
@@ -36,6 +43,14 @@ export const secureApiFetch = async <T>(
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
+    const headers = new Headers(options.headers || {});
+    headers.set("Accept", "application/json");
+
+    const token = getStoredAuthToken();
+    if (token && !headers.has("Authorization")) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+
     const response = await fetch(url, {
       ...options,
       credentials: "include",
@@ -44,10 +59,7 @@ export const secureApiFetch = async <T>(
       redirect: "follow",
       referrerPolicy: "strict-origin-when-cross-origin",
       signal: controller.signal,
-      headers: {
-        Accept: "application/json",
-        ...(options.headers || {}),
-      },
+      headers,
     });
 
     const data = await parseJsonSafe<T>(response);

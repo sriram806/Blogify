@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { AUTH_TOKEN_KEY } from "@/lib/api";
 
 export type AuthUser = {
   _id: string;
@@ -35,9 +36,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshProfile = useCallback(async () => {
     try {
+      const token = typeof window !== "undefined" ? localStorage.getItem(AUTH_TOKEN_KEY) : null;
+
       const response = await fetch(`${API_BASE}/profile`, {
         method: "GET",
         credentials: "include",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
 
       if (!response.ok) {

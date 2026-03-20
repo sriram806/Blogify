@@ -7,6 +7,7 @@ import { FaGithub } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import { useAuth } from "@/Components/Auth/AuthProvider";
 import { AUTH_CONFIG } from "@/Components/Auth/auth.config";
+import { AUTH_TOKEN_KEY } from "@/lib/api";
 
 declare global {
     interface Window {
@@ -86,6 +87,10 @@ const RegisterModal = ({
                         return;
                     }
 
+                    if (result?.token) {
+                        localStorage.setItem(AUTH_TOKEN_KEY, result.token);
+                    }
+
                     setUser(result?.data?.user || null);
                     setGreeting(`Hi ${result?.data?.user?.name || "there"}, welcome to Blogify!`);
                     setSuccess("Login successful!");
@@ -147,6 +152,10 @@ const RegisterModal = ({
             if (!response.ok || !result?.success) {
                 setError(result?.message || "Registration failed");
                 return;
+            }
+
+            if (result?.token) {
+                localStorage.setItem(AUTH_TOKEN_KEY, result.token);
             }
 
             setUser(result?.data?.user || null);
