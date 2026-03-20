@@ -606,3 +606,47 @@ export const deleteBlogById = async (blogId: string) => {
     message: response.data?.message || "Blog deleted successfully",
   };
 };
+
+export type SearchSuggestion = {
+  slug: string;
+  title: string;
+  category: string;
+};
+
+type SearchSuggestionsResponse = {
+  success?: boolean;
+  suggestions?: SearchSuggestion[];
+  message?: string;
+};
+
+export const fetchSearchSuggestions = async (query: string): Promise<SearchSuggestion[]> => {
+  if (!query || query.trim().length < 2) return [];
+
+  const response = await secureApiFetch<SearchSuggestionsResponse>(
+    `${BLOG_READ_API}/search-suggestions?q=${encodeURIComponent(query.trim())}`,
+    { method: "GET" }
+  );
+
+  if (!response.ok || !response.data?.suggestions) return [];
+  return response.data.suggestions;
+};
+
+type RelatedBlogsResponse = {
+  success?: boolean;
+  blogs?: RawBlog[];
+  message?: string;
+};
+
+export const fetchRelatedBlogs = async (blogId: string): Promise<BlogItem[]> => {
+  if (!blogId) return [];
+
+  const response = await secureApiFetch<RelatedBlogsResponse>(
+    `${BLOG_READ_API}/related/${encodeURIComponent(blogId)}`,
+    { method: "GET" }
+  );
+
+  if (!response.ok || !response.data?.blogs) return [];
+
+  const mapped = response.data.blogs.map(mapRawBlogToItem);
+  return applyCachedAuthorDetails(mapped);
+};

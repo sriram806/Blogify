@@ -14,7 +14,6 @@ import {
   ALLOWED_IMAGE_TYPES,
   CATEGORIES,
   DEFAULT_DRAFT,
-  LOCAL_DRAFTS_KEY,
   MAX_IMAGE_SIZE_MB,
   STORAGE_KEY,
 } from "@/Components/Write/write.constants";
@@ -23,8 +22,6 @@ import {
   ContentImageUploadResponse,
   DraftListResponse,
   DraftSaveResponse,
-  EditorTab,
-  LocalDraftRecord,
   PublishResponse,
   RemoteDraft,
 } from "@/Components/Write/write.types";
@@ -36,11 +33,9 @@ const BlogWritePage = () => {
   const [editIdParam, setEditIdParam] = useState("");
   const { user, loading } = useAuth();
   const [draft, setDraft] = useState<BlogDraft>(DEFAULT_DRAFT);
-  const [localDrafts, setLocalDrafts] = useState<LocalDraftRecord[]>([]);
   const [remoteDrafts, setRemoteDrafts] = useState<RemoteDraft[]>([]);
   const [activeRemoteDraftId, setActiveRemoteDraftId] = useState<number | null>(null);
   const [tagInput, setTagInput] = useState("");
-  const [editorTab, setEditorTab] = useState<EditorTab>("split");
   const [coverPreview, setCoverPreview] = useState<string>("");
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [statusMessage, setStatusMessage] = useState<string>("");
@@ -50,8 +45,6 @@ const BlogWritePage = () => {
   const [isUploadingContentImages, setIsUploadingContentImages] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<string>("");
   const [editingBlogId, setEditingBlogId] = useState<string | null>(null);
-  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const importFileRef = useRef<HTMLInputElement | null>(null);
   const contentImagesRef = useRef<HTMLInputElement | null>(null);
   const hasLoadedEditDraftRef = useRef(false);
 
@@ -82,15 +75,6 @@ const BlogWritePage = () => {
       setStatusMessage("Recovered your previous local draft.");
     } catch {
       setStatusMessage("Unable to recover saved draft.");
-    }
-
-    try {
-      const savedLocalDrafts = localStorage.getItem(LOCAL_DRAFTS_KEY);
-      if (!savedLocalDrafts) return;
-      const parsedLocalDrafts = JSON.parse(savedLocalDrafts) as LocalDraftRecord[];
-      setLocalDrafts(parsedLocalDrafts);
-    } catch {
-      setLocalDrafts([]);
     }
   }, []);
 
@@ -229,42 +213,9 @@ const BlogWritePage = () => {
     setCoverPreview(value);
   };
 
-  const insertSnippet = (before: string, after = "") => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selectedText = draft.content.slice(start, end);
-    const text = `${before}${selectedText || "text"}${after}`;
-    const newContent = draft.content.slice(0, start) + text + draft.content.slice(end);
-
-    updateDraft("content", newContent);
-
-    requestAnimationFrame(() => {
-      textarea.focus();
-      const cursor = start + text.length;
-      textarea.setSelectionRange(cursor, cursor);
-    });
-  };
-
   const insertAtCursor = (value: string) => {
-    const textarea = textareaRef.current;
-    if (!textarea) {
-      updateDraft("content", `${draft.content}${draft.content.endsWith("\n") ? "" : "\n"}${value}`);
-      return;
-    }
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const newContent = draft.content.slice(0, start) + value + draft.content.slice(end);
-    updateDraft("content", newContent);
-
-    requestAnimationFrame(() => {
-      textarea.focus();
-      const cursor = start + value.length;
-      textarea.setSelectionRange(cursor, cursor);
-    });
+    const separator = draft.content && !draft.content.endsWith("\n") ? "\n" : "";
+    updateDraft("content", `${draft.content}${separator}${value}`);
   };
 
   const uploadContentImages = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -389,73 +340,6 @@ const BlogWritePage = () => {
     window.addEventListener("keydown", handleShortcut);
     return () => window.removeEventListener("keydown", handleShortcut);
   }, [saveDraft]);
-
-  const clearDraft = () => {
-    setDraft(DEFAULT_DRAFT);
-    setTagInput("");
-    setCoverPreview("");
-    setCoverImageFile(null);
-    setActiveRemoteDraftId(null);
-    setStatusMessage("Draft reset. Start writing a fresh post.");
-  };
-
-  const saveToLocalDrafts = () => {
-    const localEntry: LocalDraftRecord = {
-      id: `${Date.now()}`,
-      title: sanitizeFreeText(draft.title) || "Untitled",
-      savedAt: new Date().toISOString(),
-      draft: { ...draft },
-    };
-
-    const nextDrafts = [localEntry, ...localDrafts].slice(0, 12);
-    setLocalDrafts(nextDrafts);
-    localStorage.setItem(LOCAL_DRAFTS_KEY, JSON.stringify(nextDrafts));
-    setStatusMessage("Draft saved to local storage list.");
-  };
-
-  const loadFromLocalDrafts = (localDraft: LocalDraftRecord) => {
-    setDraft(localDraft.draft);
-    setCoverPreview(localDraft.draft.coverImageDataUrl || localDraft.draft.coverImageUrl || "");
-    setCoverImageFile(null);
-    setStatusMessage(`Loaded local draft: ${localDraft.title}`);
-  };
-
-  const deleteFromLocalDrafts = (id: string) => {
-    const nextDrafts = localDrafts.filter((item) => item.id !== id);
-    setLocalDrafts(nextDrafts);
-    localStorage.setItem(LOCAL_DRAFTS_KEY, JSON.stringify(nextDrafts));
-    setStatusMessage("Removed local draft from storage list.");
-  };
-
-  const downloadDraft = () => {
-    const blob = new Blob([JSON.stringify(draft, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = `blog-draft-${Date.now()}.json`;
-    anchor.click();
-    URL.revokeObjectURL(url);
-    setStatusMessage("Draft exported as JSON.");
-  };
-
-  const importDraft = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    try {
-      const text = await file.text();
-      const parsed = JSON.parse(text) as Partial<BlogDraft>;
-      const merged = { ...DEFAULT_DRAFT, ...parsed };
-      setDraft(merged);
-      setCoverPreview(merged.coverImageUrl || "");
-      setCoverImageFile(null);
-      setStatusMessage("Draft imported successfully.");
-    } catch {
-      setStatusMessage("Invalid draft file. Please import a valid JSON draft.");
-    } finally {
-      event.target.value = "";
-    }
-  };
 
   const applyRemoteDraft = (remoteDraft: RemoteDraft) => {
     setDraft({
@@ -655,9 +539,9 @@ const BlogWritePage = () => {
   if (!user) return <NotAuthenticated />;
 
   return (
-    <main className="min-h-screen bg-white">
-      <section className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-        <div className="sticky top-16 z-20 mb-6 border-b border-gray-200 bg-white/95 pb-4 backdrop-blur">
+    <main className="min-h-screen bg-gray-50">
+      <section className="mx-auto w-full max-w-350 px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+        <div className="sticky top-16 z-20 mb-6 rounded-2xl border border-gray-200 bg-white/95 p-4 sm:p-5 shadow-sm backdrop-blur">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-xs uppercase tracking-[0.2em] text-gray-500">Draft</p>
@@ -671,22 +555,10 @@ const BlogWritePage = () => {
               isSavingDraft={isSavingDraft}
               isPublishing={isPublishing}
               onSaveDraft={saveDraft}
-              onSaveLocalDraft={saveToLocalDrafts}
-              onExportDraft={downloadDraft}
-              onImportDraft={() => importFileRef.current?.click()}
-              onReset={clearDraft}
               onPublish={publishPost}
             />
           </div>
         </div>
-
-        <input
-          ref={importFileRef}
-          type="file"
-          accept="application/json"
-          onChange={importDraft}
-          className="hidden"
-        />
 
         <input
           ref={contentImagesRef}
@@ -717,16 +589,13 @@ const BlogWritePage = () => {
 
         <DraftsPanel
           remoteDrafts={remoteDrafts}
-          localDrafts={localDrafts}
           activeRemoteDraftId={activeRemoteDraftId}
           onRefreshRemote={loadRemoteDrafts}
           onDeleteRemote={deleteRemoteDraft}
           onApplyRemote={applyRemoteDraft}
-          onLoadLocal={loadFromLocalDrafts}
-          onDeleteLocal={deleteFromLocalDrafts}
         />
 
-        <div className="mt-6 grid grid-cols-1 xl:grid-cols-[minmax(0,820px)_340px] xl:justify-center gap-8">
+        <div className="mt-6 grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] xl:justify-center gap-8 items-start">
           <div className="xl:pr-2">
             <EditorSection
               title={draft.title}
@@ -735,14 +604,10 @@ const BlogWritePage = () => {
               titleLength={titleLength}
               excerptLength={excerptLength}
               content={draft.content}
-              editorTab={editorTab}
-              textareaRef={textareaRef}
               onChangeTitle={(value) => updateDraft("title", value)}
               onChangeSubtitle={(value) => updateDraft("subtitle", value)}
               onChangeExcerpt={(value) => updateDraft("excerpt", value)}
               onChangeContent={(value) => updateDraft("content", value)}
-              onTabChange={setEditorTab}
-              onSnippet={insertSnippet}
               onUploadImages={() => contentImagesRef.current?.click()}
               isUploadingImages={isUploadingContentImages}
             />
@@ -765,14 +630,8 @@ const BlogWritePage = () => {
               onRemoveTag={removeTag}
               onCoverFile={handleCoverFileChange}
               onCoverUrl={handleCoverUrlChange}
-              onSeoTitle={(value) => updateDraft("seoTitle", value)}
-              onSeoDescription={(value) => updateDraft("seoDescription", value)}
-              onSeoKeywords={(value) => updateDraft("seoKeywords", value)}
               onStatus={(value) => updateDraft("status", value)}
               onScheduledAt={(value) => updateDraft("scheduledAt", value)}
-              onVisibility={(value) => updateDraft("visibility", value)}
-              onAllowComments={(value) => updateDraft("allowComments", value)}
-              onFeatured={(value) => updateDraft("featured", value)}
             />
           </div>
         </div>

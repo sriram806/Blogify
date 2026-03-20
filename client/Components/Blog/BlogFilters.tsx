@@ -1,6 +1,9 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { BlogDateRange, BlogFilterState, BlogSortBy } from "./blog.types";
+import { fetchSearchSuggestions, SearchSuggestion } from "./blog.api";
+import SearchSuggestions from "./SearchSuggestions";
 
 type BlogFiltersProps = {
   filters: BlogFilterState;
@@ -40,6 +43,44 @@ export default function BlogFilters({
   onChange,
   onReset,
 }: BlogFiltersProps) {
+  const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchWrapperRef = useRef<HTMLDivElement>(null);
+
+  // Debounced fetch whenever the search value changes
+  useEffect(() => {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+
+    const q = filters.search.trim();
+    if (q.length < 2) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    setSuggestionsLoading(true);
+    setShowSuggestions(true);
+
+    debounceTimer.current = setTimeout(async () => {
+      const results = await fetchSearchSuggestions(q);
+      setSuggestions(results);
+      setSuggestionsLoading(false);
+    }, 300);
+  }, [filters.search]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (searchWrapperRef.current && !searchWrapperRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
   return (
     <section className="rounded-3xl border border-gray-200 bg-white p-5 md:p-6 shadow-sm">
       <div className="flex items-center justify-between gap-3 mb-5">
@@ -54,16 +95,31 @@ export default function BlogFilters({
       </div>
 
       <div className="grid grid-cols-1 gap-4">
-        <label className="flex flex-col gap-2 text-sm text-gray-700">
-          Search
-          <input
-            type="text"
-            value={filters.search}
-            onChange={(e) => onChange("search", e.target.value)}
-            placeholder="Title, excerpt, or keyword"
-            className="w-full rounded-xl border border-gray-300 px-3 py-2.5 outline-none focus:ring-2 focus:ring-gray-300"
-          />
-        </label>
+        {/* Search with Suggestions */}
+        <div className="flex flex-col gap-2 text-sm text-gray-700">
+          <span>Search</span>
+          <div ref={searchWrapperRef} className="relative">
+            <input
+              type="text"
+              value={filters.search}
+              onChange={(e) => onChange("search", e.target.value)}
+              onFocus={() => {
+                if (filters.search.trim().length >= 2) setShowSuggestions(true);
+              }}
+              placeholder="Title, excerpt, or keyword"
+              className="w-full rounded-xl border border-gray-300 px-3 py-2.5 outline-none focus:ring-2 focus:ring-gray-300"
+              autoComplete="off"
+            />
+            {showSuggestions && (
+              <SearchSuggestions
+                suggestions={suggestions}
+                loading={suggestionsLoading}
+                query={filters.search}
+                onClose={() => setShowSuggestions(false)}
+              />
+            )}
+          </div>
+        </div>
 
         <label className="flex flex-col gap-2 text-sm text-gray-700">
           Category
@@ -140,4 +196,4 @@ export default function BlogFilters({
       </div>
     </section>
   );
-}
+}

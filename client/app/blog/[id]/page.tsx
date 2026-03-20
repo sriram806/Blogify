@@ -11,7 +11,6 @@ import { BlogDetail, BlogItem } from "@/Components/Blog/blog.types";
 import { addCommentToBlog,
   buildAuthorProfilePath,
   BlogCommentItem,
-  fetchAllBlogs,
   fetchBlogBySlug,
   fetchCommentsByBlogId,
   deleteBlogById,
@@ -21,14 +20,16 @@ import { addCommentToBlog,
 import { useAuth } from "@/Components/Auth/AuthProvider";
 import LoginModal from "@/Components/Auth/LoginModal";
 import RegisterModal from "@/Components/Auth/RegisterModal";
+import RelatedBlogs from "@/Components/Blog/RelatedBlogs";
+import { useRecentlyRead } from "@/hooks/useRecentlyRead";
 
 export default function BlogDetailPage() {
   const router = useRouter();
   const params = useParams();
   const blogSlug = params.id as string;
   const { user } = useAuth();
+  const { recordView } = useRecentlyRead();
   const [blog, setBlog] = useState<BlogDetail | null>(null);
-  const [allBlogs, setAllBlogs] = useState<BlogItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [liked, setLiked] = useState(false);
@@ -45,10 +46,7 @@ export default function BlogDetailPage() {
       setLoading(true);
       setErrorMessage("");
 
-      const [detailResponse, listResponse] = await Promise.all([
-        fetchBlogBySlug(blogSlug),
-        fetchAllBlogs(),
-      ]);
+      const detailResponse = await fetchBlogBySlug(blogSlug);
 
       if (!detailResponse.ok || !detailResponse.blog) {
         setBlog(null);
@@ -57,10 +55,20 @@ export default function BlogDetailPage() {
         return;
       }
 
-      setBlog(detailResponse.blog);
-      setAllBlogs(listResponse.ok ? listResponse.blogs : []);
+      const loadedBlog = detailResponse.blog;
+      setBlog(loadedBlog);
 
-      const commentsResponse = await fetchCommentsByBlogId(detailResponse.blog.id);
+      // Track this blog in recently read history
+      recordView({
+        id: loadedBlog.id,
+        slug: loadedBlog.slug,
+        title: loadedBlog.title,
+        category: loadedBlog.category,
+        coverImage: loadedBlog.coverImage,
+        publishedAt: loadedBlog.publishedAt,
+      });
+
+      const commentsResponse = await fetchCommentsByBlogId(loadedBlog.id);
       if (commentsResponse.ok) {
         setComments(commentsResponse.comments);
       } else {
@@ -68,7 +76,7 @@ export default function BlogDetailPage() {
       }
 
       if (user) {
-        const likeResponse = await fetchLikeStatus(detailResponse.blog.id);
+        const likeResponse = await fetchLikeStatus(loadedBlog.id);
         setLiked(likeResponse.ok ? likeResponse.liked : false);
       } else {
         setLiked(false);
@@ -81,14 +89,7 @@ export default function BlogDetailPage() {
     if (blogSlug) {
       load();
     }
-  }, [blogSlug, user]);
-
-  const relatedBlogs = useMemo(() => {
-    if (!blog) return [];
-    return allBlogs.filter(
-      (b) => b.category === blog.category && b.slug !== blog.slug
-    ).slice(0, 3);
-  }, [blog, allBlogs]);
+  }, [blogSlug, user, recordView]);
 
   const canEditBlog = Boolean(user?._id && blog?.authorId && user._id === blog.authorId);
   const authorProfilePath = blog?.authorId ? buildAuthorProfilePath(blog.author, blog.authorId) : "";
@@ -471,31 +472,8 @@ export default function BlogDetailPage() {
           </section>
         </div>
 
-        {relatedBlogs.length > 0 && (
-          <section className="mt-16">
-            <h2 className="text-3xl font-bold text-gray-900 mb-8">Related Articles</h2>
-            <div className="space-y-4">
-              {relatedBlogs.map((relatedBlog) => (
-                <BlogRowCard
-                  key={relatedBlog.id}
-                  id={relatedBlog.id}
-                  slug={relatedBlog.slug}
-                  authorId={relatedBlog.authorId}
-                  title={relatedBlog.title}
-                  excerpt={relatedBlog.excerpt}
-                  author={relatedBlog.author}
-                  authorImage={relatedBlog.authorImage}
-                  coverImage={relatedBlog.coverImage}
-                  publishedAt={relatedBlog.publishedAt}
-                  readTime={`${relatedBlog.readMinutes} min`}
-                  category={relatedBlog.category}
-                  likes={relatedBlog.likes}
-                  comments={relatedBlog.comments}
-                  views={relatedBlog.views}
-                />
-              ))}
-            </div>
-          </section>
+        {blog && (
+          <RelatedBlogs blogId={blog.id} currentSlug={blog.slug} />
         )}
 
         <div className="mt-12 flex items-center justify-between">
